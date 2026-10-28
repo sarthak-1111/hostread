@@ -75,7 +75,7 @@ export function RunView(props: RunViewProps) {
           </div>
         )}
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
           <div className="no-print lg:sticky lg:top-20 lg:self-start">
             <AgentTrace steps={state.steps} running={state.status === "running" || state.status === "connecting"} cached={state.cached} stats={state.result?.stats} />
             {state.llm && (

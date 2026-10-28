@@ -50,9 +50,9 @@ export function AgentTrace({ steps, running, cached, stats }: { steps: TraceStep
             <div className="truncate text-xs text-ink-3 lg:hidden">{running ? current?.title ?? "Starting…" : `${steps.length} steps`}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-ink-3">
-          <span className="tabular">{steps.length} steps</span>
-          <span>·</span>
+        <div className="flex shrink-0 items-center gap-2 text-xs text-ink-3">
+          <span className="hidden tabular sm:inline">{steps.length} steps</span>
+          <span className="hidden sm:inline">·</span>
           <span className="tabular">{apiCalls} API calls</span>
           {cached && <span className="rounded-full bg-green-soft px-2 py-0.5 font-medium text-green">cached</span>}
           <ChevronDown className={`size-4 transition lg:hidden ${openMobile ? "rotate-180" : ""}`} />
