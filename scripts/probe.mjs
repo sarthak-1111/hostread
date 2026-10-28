@@ -142,6 +142,8 @@ const DOMAINS = [
   ["destination", { "filter.type": "urn:entity:destination" }],
   ["place (any)", { "filter.type": "urn:entity:place" }],
   ["place (restaurant tag)", { "filter.type": "urn:entity:place", "filter.tags": "urn:tag:category:place:restaurant" }],
+  // What HostRead uses for food & drink: national brands rather than local venues.
+  ["brand (food & beverage)", { "filter.type": "urn:entity:brand", "filter.tags": "urn:tag:genre:brand:food_and_beverage" }],
 ];
 summary.sections.domains = [];
 for (const [label, params] of DOMAINS) {
@@ -182,13 +184,14 @@ out("\n== 5. demographics / heatmap / explainability / entities ==");
   out("   demographics.query:", q ? { age: q.age, gender: q.gender } : "none");
   summary.sections.demographics = { status: r.status, shape: q ? { age: keys(q.age), gender: keys(q.gender) } : null };
 }
-for (const boundary of [undefined, "city", "neighborhood"]) {
-  const params = { "filter.type": "urn:heatmap", "signal.interests.entities": P.id, take: 10 };
-  if (boundary) params["output.heatmap.boundary"] = boundary;
+{
+  // The heatmap needs a location; only urn:geohash and urn:entity:locality are valid
+  // boundaries, and locality returns every city with its outline (hundreds of MB), so
+  // only geohash is probed. See API_NOTES.md.
+  const params = { "filter.type": "urn:heatmap", "signal.interests.entities": P.id, "filter.location.query": "United States", "output.heatmap.boundary": "urn:geohash" };
   const r = await get("/v2/insights", params);
   const h = r.json?.results?.heatmap;
-  out(`[${r.status} ${r.ms}ms] heatmap boundary=${boundary ?? "default"}: ${Array.isArray(h) ? h.length : 0} points; first keys`, h?.[0] ? { top: keys(h[0]), location: keys(h[0].location), query: keys(h[0].query) } : r.err ?? "none");
-  if (h?.[0]?.location) out("   first location:", h[0].location);
+  out(`[${r.status} ${r.ms}ms] heatmap (US, geohash): ${Array.isArray(h) ? h.length : 0} cells; first keys`, h?.[0] ? { top: keys(h[0]), location: keys(h[0].location), query: keys(h[0].query) } : r.err ?? "none");
 }
 {
   const r = await get("/v2/insights", { "filter.type": "urn:entity:brand", "signal.interests.entities": P.id, "feature.explainability": "true", take: 3 });

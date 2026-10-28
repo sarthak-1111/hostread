@@ -8,7 +8,14 @@ HostRead is an agentic tool for independent podcasters and small networks withou
 - **Built for:** the [Qloo Agentic Hackathon](https://qloo.devpost.com) (Oct 2026)
 - **Licence:** MIT
 
-<!-- screenshots: docs/*.png, captured with live data -->
+| | |
+|---|---|
+| ![Landing page with search, brand-safety toggles and example shows](docs/01-landing.png) | ![Sponsor deck: the agent trace, the agent's read on the audience and the top-ranked sponsor](docs/02-deck.png) |
+| ![Pitch email for the top sponsor, citing favourites both audiences share](docs/03-pitch.png) | ![Obvious vs. Surprising: a plain LLM's guesses next to the taste-grounded picks](docs/04-obvious-vs-surprising.png) |
+
+![One-page audience media kit](docs/05-media-kit.png)
+
+_Screenshots from the live demo with Qloo data, for Crime Junkie._
 
 ## What you get
 
@@ -122,7 +129,9 @@ npm run probe     # API verification probe (needs QLOO_API_KEY); prints a summar
 | `LLM_MAX_CONCURRENCY` | `1` | Parallel LLM calls (1 for a local server). |
 | `LLM_REASONING_EFFORT` | `low` | Sent as `reasoning_effort`; empty to omit. |
 | `AGENT_MAX_STEPS`, `AGENT_MAX_API_CALLS`, `AGENT_RUN_TIMEOUT_MS` | 12, 80, 240000 | Agent guardrails. |
-| `RATE_RUNS_PER_IP_10MIN`, `RATE_RUNS_PER_IP_DAY`, `RATE_GLOBAL_RUNS_DAY` | 8, 60, 500 | Limits on fresh runs (cached runs are free). |
+| `RATE_RUNS_PER_IP_10MIN`, `RATE_RUNS_PER_IP_DAY`, `RATE_GLOBAL_RUNS_DAY` | 6, 25, 150 | Limits on fresh runs (cached runs are free). |
+| `QLOO_MONTHLY_RESERVE` | 2500 | Fresh runs stop when Qloo's `x-month-ratelimit-remaining` header drops below this (a run makes about 60 calls). |
+| `CACHE_RUN_TTL_SEC` | 1209600 | How long a finished deck stays cached (14 days). |
 | `LLM_LABEL` | — | Shown in the UI instead of `<model> @ <endpoint host>`. |
 | `RUN_EXECUTION` | `inline` | `stream` runs the job inside the start request and streams events back (Vercel); `inline` runs it in the server and the browser polls; `background` hands it to the Netlify background function. |
 | `JOB_SECRET` | — | Shared secret between `/api/run` and the background function (any long random string). |
