@@ -184,7 +184,7 @@ export function useRun(query: string | null) {
         await poll(start.jobId, start.pollMs ?? 1000, signal, emit);
       } catch (err) {
         if (signal.aborted) return;
-        dispatch({ type: "net-error", message: err instanceof PollError ? err.message : "Network error — check your connection and retry." });
+        dispatch({ type: "net-error", message: err instanceof PollError ? err.message : "Network error. Check your connection and retry." });
       }
     })();
     return () => {

@@ -26,13 +26,13 @@ function systemPrompt(exclude: SafetyCategory[]): string {
     "You only know what the tools return. The tools are backed by the Qloo taste graph (cross-domain affinity data).",
     "",
     "Plan:",
-    "1. audience_profile — what listeners love across film, tv, music, dining, books, travel and podcasts.",
-    "2. brand_candidates — brands ranked by affinity among this show's listeners" + (exclude.length ? ` (excluded for brand safety: ${exclude.join(", ")})` : "") + ".",
+    "1. audience_profile: what listeners love across film, tv, music, dining, books, travel and podcasts.",
+    "2. brand_candidates: brands ranked by affinity among this show's listeners" + (exclude.length ? ` (excluded for brand safety: ${exclude.join(", ")})` : "") + ".",
     `3. Choose up to ${config.agent.deepDiveBrands} brands for brand_fan_profile. Favour high affinity but pick a varied set: at most 2 per category, skip near-duplicates or sub-brands of the same company, and skip brands that are implausible podcast sponsors (no consumer product, government or utilities).`,
     "4. overlap_evidence for the brands you profiled.",
     "5. demographics and geography for the media kit.",
-    "6. rank_sponsors — deterministic scoring code. Never compute or adjust scores yourself.",
-    "Then reply (without tools) with a 2–3 sentence read on what defines this audience's taste, citing only names the tools returned.",
+    "6. rank_sponsors: deterministic scoring code. Never compute or adjust scores yourself.",
+    "Then reply (without tools) with a 2–3 sentence read on what defines this audience's taste, citing only names the tools returned. Plain text, no em dashes.",
     "",
     "Rules: independent tool calls may go in the same turn. Use ids exactly as returned. Never invent entities, ids or numbers. Don't repeat a call with the same arguments. Give a short `reason` with each call.",
   ].join("\n");
@@ -143,7 +143,7 @@ function startBaseline(ctx: RunContext) {
 async function agentLoop(ctx: RunContext, input: RunInput) {
   const p = ctx.state.podcast;
   const task = p
-    ? `Podcast: "${p.name}" (id: ${p.id}${p.genres?.length ? `, genres: ${p.genres.join(", ")}` : ""}). It is already resolved — start with audience_profile and brand_candidates.`
+    ? `Podcast: "${p.name}" (id: ${p.id}${p.genres?.length ? `, genres: ${p.genres.join(", ")}` : ""}). It is already resolved. Start with audience_profile and brand_candidates.`
     : `The user typed: "${input.query ?? input.nameHint ?? ""}". Call resolve_podcast first.`;
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt(ctx.exclude) },
@@ -154,7 +154,7 @@ async function agentLoop(ctx: RunContext, input: RunInput) {
     if (ctx.signal.aborted) return;
     if (Date.now() - ctx.startedAt > config.agent.runTimeoutMs * 0.6) {
       ctx.fallbacks.push("agent-time-budget");
-      skippedStep(ctx, { actor: "guardrail", tool: "time_budget", title: "Time budget reached — guardrails finish the run" }, "Remaining steps run without the LLM");
+      skippedStep(ctx, { actor: "guardrail", tool: "time_budget", title: "Time budget reached, guardrails finish the run" }, "Remaining steps run without the LLM");
       return;
     }
     const t0 = Date.now();
@@ -167,7 +167,7 @@ async function agentLoop(ctx: RunContext, input: RunInput) {
       ctx.fallbacks.push("llm-unavailable");
       skippedStep(
         ctx,
-        { actor: "guardrail", tool: "llm", title: "LLM unavailable — switching to the scripted plan" },
+        { actor: "guardrail", tool: "llm", title: "LLM unavailable, switching to the scripted plan" },
         err instanceof LlmUnavailableError ? err.message : "Language model error",
       );
       return;

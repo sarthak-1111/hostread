@@ -6,7 +6,7 @@ import type { LlmClient } from "../llm/client";
 import type { PodcastEntity } from "../types";
 
 export async function baselineGuess(llm: LlmClient, podcast: PodcastEntity, signal?: AbortSignal): Promise<string[]> {
-  const topic = [podcast.genres?.join(", "), podcast.description].filter(Boolean).join(" — ");
+  const topic = [podcast.genres?.join(", "), podcast.description].filter(Boolean).join(". ");
   const content = await llm.complete(
     [
       { role: "system", content: "You are a podcast ad-sales assistant with no data access. Answer from general knowledge only." },

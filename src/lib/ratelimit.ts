@@ -23,7 +23,7 @@ export async function checkRunLimit(ip: string): Promise<LimitResult> {
     return {
       ok: false,
       message:
-        "HostRead has hit its daily budget of fresh analyses. Cached shows (like the examples on the home page) still work instantly — please try a new show tomorrow.",
+        "HostRead has hit its daily budget of fresh analyses. Cached shows (like the examples on the home page) still work instantly. Please try a new show tomorrow.",
       retryAfterSec: 3600,
     };
   }
@@ -31,7 +31,7 @@ export async function checkRunLimit(ip: string): Promise<LimitResult> {
   if (short > config.limits.runsPerIpPer10Min) {
     return {
       ok: false,
-      message: "You're running analyses faster than we can pour coffee. Give it a few minutes, or open one of the example shows — those are cached and instant.",
+      message: "You're running analyses faster than we can pour coffee. Give it a few minutes, or open one of the example shows: those are cached and instant.",
       retryAfterSec: 600,
     };
   }
@@ -49,6 +49,6 @@ export async function countGlobalRun(): Promise<void> {
 
 export async function checkSimpleLimit(bucket: string, ip: string, max: number, windowSec: number): Promise<LimitResult> {
   const n = await incrWithTtl(`${bucket}:${ip}`, windowSec);
-  if (n > max) return { ok: false, message: "Slow down a little — too many requests in a short time.", retryAfterSec: windowSec };
+  if (n > max) return { ok: false, message: "Slow down a little: too many requests in a short time.", retryAfterSec: windowSec };
   return { ok: true };
 }

@@ -219,7 +219,7 @@ export async function rank(ctx: RunContext) {
 }
 
 function requirePodcast(ctx: RunContext): PodcastEntity {
-  if (!ctx.state.podcast) throw new Error("No podcast resolved yet — call resolve_podcast first.");
+  if (!ctx.state.podcast) throw new Error("No podcast resolved yet. Call resolve_podcast first.");
   return ctx.state.podcast;
 }
 

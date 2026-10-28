@@ -1,73 +1,174 @@
 @import "tailwindcss";
 
+/* Design tokens: Open Design `claude` package (design-systems/claude/tokens.css).
+ * Copied as-is except the font stacks, which use the package's documented
+ * substitutes (Georgia for the serif, Inter for the sans, JetBrains Mono). */
 :root {
-  --bg: #f6f3ed;
-  --surface: #ffffff;
-  --surface-2: #faf8f4;
-  --ink: #17140f;
-  --ink-2: #5f584e;
-  --ink-3: #8f877b;
-  --line: #e7e1d6;
-  --line-2: #d9d1c3;
-  --accent: #f0441f;
-  --accent-ink: #b8300f;
-  --accent-soft: #fde7df;
-  --violet: #6343f0;
-  --violet-soft: #ece7ff;
-  --green: #178a5c;
-  --green-soft: #def3e8;
-  --amber: #a86400;
-  --amber-soft: #fff1d6;
-  --shadow: 0 1px 2px rgb(23 20 15 / 0.04), 0 8px 24px -12px rgb(23 20 15 / 0.12);
+  /* Surface */
+  --bg: #f5f4ed;
+  --surface: #faf9f5;
+  --surface-warm: #e8e6dc;
+
+  /* Foreground ramp */
+  --fg: #141413;
+  --fg-2: #3d3d3a;
+  --muted: #5e5d59;
+  --meta: #87867f;
+
+  /* Border */
+  --border: #f0eee6;
+  --border-soft: #e8e6dc;
+
+  /* Accent */
+  --accent: #c96442;
+  --accent-on: #faf9f5;
+  --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+  --accent-active: color-mix(in oklab, var(--accent), black 14%);
+
+  /* Semantic */
+  --success: #17a34a;
+  --warn: #eab308;
+  --danger: #b53333;
+
+  /* Typography */
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-body: var(--font-inter), system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "JetBrains Mono", Menlo, monospace;
+
+  --text-xs: 10px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 25px;
+  --text-2xl: 32px;
+  --text-3xl: 52px;
+  --text-4xl: 64px;
+
+  --leading-body: 1.6;
+  --leading-tight: 1.1;
+  --tracking-display: 0em;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --section-y-desktop: 96px;
+  --section-y-tablet: 64px;
+  --section-y-phone: 48px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  /* Elevation */
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: rgba(0, 0, 0, 0.05) 0px 4px 24px;
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 3px rgba(56, 152, 236, 0.3);
+
+  /* Motion */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --container-max: 1200px;
+  --container-gutter-desktop: 24px;
+  --container-gutter-tablet: 16px;
+  --container-gutter-phone: 12px;
+
+  /* App roles, from DESIGN.md §2 values (Ring Warm, Focus Blue) or mixed from
+   * the tokens above. Accent and success are darkened for small text so it
+   * passes WCAG AA on parchment. */
+  --ring-warm: #d1cfc5;
+  --focus: #3898ec;
+  --accent-text: var(--accent-active);
+  --accent-wash: color-mix(in oklab, var(--accent) 11%, var(--surface));
+  --accent-track: color-mix(in oklab, var(--accent) 18%, var(--surface));
+  --success-text: color-mix(in oklab, var(--success), black 28%);
+  --success-wash: color-mix(in oklab, var(--success) 10%, var(--surface));
+  --warn-ink: color-mix(in oklab, var(--warn), black 55%);
+  --warn-wash: color-mix(in oklab, var(--warn) 16%, var(--bg));
+  --danger-text: var(--danger);
   color-scheme: light;
 }
 
+/* Dark theme: the dark surfaces and text colours named in DESIGN.md §2
+ * (Deep Dark, Dark Surface, Ivory, Warm Sand, Warm Silver, Coral). */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #11100e;
-    --surface: #1a1815;
-    --surface-2: #211e1a;
-    --ink: #f3efe8;
-    --ink-2: #b4ac9f;
-    --ink-3: #847c70;
-    --line: #2d2a25;
-    --line-2: #3b3731;
-    --accent: #ff6440;
-    --accent-ink: #ff8d70;
-    --accent-soft: #3a1d14;
-    --violet: #9b86ff;
-    --violet-soft: #251f45;
-    --green: #4cc490;
-    --green-soft: #15291f;
-    --amber: #f0b44c;
-    --amber-soft: #33270f;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+    --bg: #141413;
+    --surface: color-mix(in oklab, #141413 55%, #30302e);
+    --surface-warm: #30302e;
+    --fg: #faf9f5;
+    --fg-2: #e8e6dc;
+    --muted: #b0aea5;
+    --meta: #87867f;
+    --border: #30302e;
+    --border-soft: #3d3d3a;
+    --ring-warm: #4d4c48;
+    --accent-text: #d97757;
+    --accent-wash: color-mix(in oklab, var(--accent) 11%, var(--surface));
+    --accent-track: color-mix(in oklab, var(--accent) 26%, var(--surface));
+    --success-text: color-mix(in oklab, var(--success), white 20%);
+    --success-wash: color-mix(in oklab, var(--success) 16%, var(--surface));
+    --warn-ink: var(--warn);
+    --warn-wash: color-mix(in oklab, var(--warn) 12%, var(--bg));
+    --danger-text: color-mix(in oklab, var(--danger), white 35%);
+    --elev-raised: rgba(0, 0, 0, 0.35) 0px 4px 24px;
     color-scheme: dark;
   }
 }
 
+/* Tailwind theme, following the package's tailwind-v4.css mapping. */
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
-  --color-ink-3: var(--ink-3);
-  --color-line: var(--line);
-  --color-line-2: var(--line-2);
+  --color-surface-warm: var(--surface-warm);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-muted: var(--muted);
+  --color-meta: var(--meta);
+  --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
   --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
-  --color-accent-soft: var(--accent-soft);
-  --color-violet: var(--violet);
-  --color-violet-soft: var(--violet-soft);
-  --color-green: var(--green);
-  --color-green-soft: var(--green-soft);
-  --color-amber: var(--amber);
-  --color-amber-soft: var(--amber-soft);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --shadow-card: var(--shadow);
+  --color-accent-on: var(--accent-on);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-success: var(--success);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-ring-warm: var(--ring-warm);
+  --color-accent-text: var(--accent-text);
+  --color-accent-wash: var(--accent-wash);
+  --color-accent-track: var(--accent-track);
+  --color-success-text: var(--success-text);
+  --color-success-wash: var(--success-wash);
+  --color-warn-ink: var(--warn-ink);
+  --color-warn-wash: var(--warn-wash);
+  --color-danger-text: var(--danger-text);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+  /* Label (12px) and Caption (14px) rows of DESIGN.md §3; the token scale
+   * jumps from 10px to 14px. */
+  --text-label: 12px;
+  --text-caption: 14px;
+  --text-body-sm: 15px;
+  --leading-body: var(--leading-body);
+  --shadow-ring: var(--elev-ring);
+  --shadow-raised: var(--elev-raised);
+  --ease-standard: var(--ease-standard);
 }
 
 @layer base {
@@ -78,21 +179,42 @@
 
   body {
     background: var(--bg);
-    color: var(--ink);
-    font-feature-settings: "ss01", "cv11";
+    color: var(--fg);
+    font-family: var(--font-body);
+    line-height: var(--leading-body);
     -webkit-font-smoothing: antialiased;
   }
 
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  a,
+  button,
+  summary,
+  [role="option"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   ::selection {
-    background: var(--accent-soft);
-    color: var(--ink);
+    background: var(--accent-track);
+    color: var(--fg);
   }
 
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
-    border-radius: 6px;
   }
+}
+
+/* Serif headings: one weight (500; Georgia renders it as regular). */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: var(--tracking-display);
 }
 
 .tabular {
@@ -103,11 +225,9 @@
   0%,
   100% {
     opacity: 1;
-    transform: scale(1);
   }
   50% {
     opacity: 0.35;
-    transform: scale(0.8);
   }
 }
 .on-air {
@@ -125,22 +245,13 @@
   }
 }
 .rise {
-  animation: rise 0.35s ease-out both;
+  animation: rise var(--motion-base) var(--ease-standard) both;
 }
 
-@keyframes shimmer {
-  from {
-    background-position: -200% 0;
-  }
-  to {
-    background-position: 200% 0;
-  }
-}
 .skeleton {
-  background: linear-gradient(90deg, var(--surface-2) 0%, var(--line) 50%, var(--surface-2) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
-  border-radius: 8px;
+  background: var(--surface-warm);
+  border-radius: var(--radius-sm);
+  animation: pulse-dot 1.6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -156,12 +267,13 @@
   :root {
     --bg: #ffffff;
     --surface: #ffffff;
-    --surface-2: #f7f7f7;
-    --ink: #111111;
-    --ink-2: #444444;
-    --ink-3: #777777;
-    --line: #dddddd;
-    --shadow: none;
+    --surface-warm: #f0eee6;
+    --fg: #141413;
+    --fg-2: #3d3d3a;
+    --muted: #5e5d59;
+    --border: #e8e6dc;
+    --border-soft: #e8e6dc;
+    --elev-raised: none;
     color-scheme: light;
   }
   .no-print {

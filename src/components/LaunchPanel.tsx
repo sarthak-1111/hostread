@@ -32,19 +32,19 @@ export function LaunchPanel({ examples }: { examples: LaunchExample[] }) {
         <SafetyToggles value={exclude} onChange={setExclude} />
       </div>
       {examples.length > 0 && (
-        <div className="mt-7">
-          <div className="mb-2.5 text-xs font-medium uppercase tracking-[0.14em] text-ink-3">Try a show</div>
+        <div className="mt-8">
+          <p className="mb-3 text-sm text-muted">Or open an example deck</p>
           <div className="flex flex-wrap gap-2">
             {examples.map((ex) => (
               <button
                 key={ex.name}
                 type="button"
                 onClick={() => go(ex)}
-                className="group inline-flex items-center gap-2 rounded-full border border-line-2 bg-surface py-1.5 pl-3 pr-2 text-[14px] transition hover:border-ink/40"
+                className="group inline-flex min-h-9 items-center gap-2 rounded-full bg-surface py-1.5 pl-3.5 pr-2.5 text-[14px] shadow-[0_0_0_1px_var(--ring-warm)] transition-shadow duration-150 hover:shadow-[0_0_0_1px_var(--meta)]"
               >
                 <span className="font-medium">{ex.name}</span>
-                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-ink-3">{ex.genre}</span>
-                <ArrowUpRight className="size-3.5 text-ink-3 transition group-hover:text-ink" />
+                <span className="text-label text-muted">{ex.genre}</span>
+                <ArrowUpRight className="size-3.5 text-muted transition-colors duration-150 group-hover:text-fg" aria-hidden="true" />
               </button>
             ))}
           </div>

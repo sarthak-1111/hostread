@@ -11,7 +11,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export async function generateMetadata({ searchParams }: { searchParams: Search }): Promise<Metadata> {
   const q = one((await searchParams).q);
-  return { title: q ? `${q} · sponsor deck · HostRead` : "Sponsor deck · HostRead" };
+  return { title: q ? `${q}: sponsor deck | HostRead` : "Sponsor deck | HostRead" };
 }
 
 /** Free-text run: the agent resolves the show itself. */

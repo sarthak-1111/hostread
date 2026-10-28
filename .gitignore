@@ -23,6 +23,7 @@ probe-output/
 .claude/
 .vercel/
 .netlify/
+.playwright-cli/
 coverage/
 *.log
 .DS_Store

@@ -1,37 +1,37 @@
-import { Sigma } from "lucide-react";
-
 export function HowWeScore({ compact = false }: { compact?: boolean }) {
+  const Heading = compact ? "h3" : "h2";
   return (
-    <div className={`rounded-2xl border border-line bg-surface ${compact ? "p-5" : "p-6 sm:p-8"}`}>
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-ink-3">
-        <Sigma className="size-4" aria-hidden="true" /> How we score
-      </div>
-      <div className={`mt-3 font-mono tabular ${compact ? "text-[15px]" : "text-lg sm:text-xl"} tracking-tight`}>
-        Fit = 100 × (<span className="text-accent-ink">0.50·A</span> + <span className="text-violet">0.35·O</span> + <span className="text-green">0.15·S</span>)
-      </div>
-      <dl className={`mt-5 grid gap-4 ${compact ? "" : "sm:grid-cols-3"} text-sm`}>
+    <div className={`rounded-lg bg-surface shadow-[0_0_0_1px_var(--border-soft)] ${compact ? "p-5" : "p-6 sm:p-10"}`}>
+      <Heading className={`font-display leading-tight ${compact ? "text-[22px]" : "text-[32px] sm:text-[36px]"}`}>How we score</Heading>
+      <p className={`mt-4 overflow-x-auto font-mono tabular text-fg ${compact ? "text-[14px]" : "text-[15px] sm:text-[18px]"}`}>
+        Fit = 100 × (0.50·<b className="font-semibold">A</b> + 0.35·<b className="font-semibold">O</b> + 0.15·<b className="font-semibold">S</b>)
+      </p>
+      <dl className={`mt-6 grid gap-6 text-[15px] ${compact ? "" : "md:grid-cols-3 md:gap-8"}`}>
         <div>
-          <dt className="font-semibold text-accent-ink">A · Audience affinity</dt>
-          <dd className="mt-1 leading-relaxed text-ink-2">
-            Qloo&apos;s affinity of the brand among this show&apos;s listeners (<code className="font-mono text-xs">/v2/insights</code>, brand type, show as signal), min–max
-            normalised across the candidate brands.
+          <dt className="font-medium text-fg">A, audience affinity</dt>
+          <dd className="mt-1.5 max-w-[62ch] leading-relaxed text-fg-2">
+            Qloo&apos;s affinity of the brand among this show&apos;s listeners (<code className="font-mono text-[13px]">/v2/insights</code>, brand type, show as signal),
+            min-max normalised across the candidate brands.
           </dd>
         </div>
         <div>
-          <dt className="font-semibold text-violet">O · Taste overlap</dt>
-          <dd className="mt-1 leading-relaxed text-ink-2">
-            Weighted Jaccard between the listeners&apos; and the brand fans&apos; top 40 entities in film, TV, music, books and dining (rank-weighted), averaged across domains and
-            scaled so the best overlap in the deck = 1.
+          <dt className="font-medium text-fg">O, taste overlap</dt>
+          <dd className="mt-1.5 max-w-[62ch] leading-relaxed text-fg-2">
+            Weighted Jaccard between the listeners&apos; and the brand fans&apos; top 40 entities in film, TV, music, books and dining, averaged across domains and scaled so the
+            best overlap in the deck is 1.
           </dd>
         </div>
         <div>
-          <dt className="font-semibold text-green">S · Surprise</dt>
-          <dd className="mt-1 leading-relaxed text-ink-2">1 when a plain LLM, given only the show&apos;s name and topic, did not suggest the brand. These get the “Surprise fit” badge.</dd>
+          <dt className="font-medium text-fg">S, surprise</dt>
+          <dd className="mt-1.5 max-w-[62ch] leading-relaxed text-fg-2">
+            1 when a plain LLM, given only the show&apos;s name and topic, did not suggest the brand. These brands get the Surprise fit badge.
+          </dd>
         </div>
       </dl>
-      <p className="mt-5 border-t border-line pt-4 text-[13px] leading-relaxed text-ink-3">
-        Scores are computed by deterministic code, never by the LLM. A fit score is a relative ranking within one show&apos;s deck — not a prediction of revenue, CPM or
-        conversion.
+      <p className="mt-6 border-t border-border-soft pt-4 text-[13px] leading-relaxed text-muted">
+        <span className="block max-w-[72ch]">
+          Scores come from deterministic code, never from the LLM. A fit score is a relative ranking within one show&apos;s deck, not a prediction of revenue, CPM or conversion.
+        </span>
       </p>
     </div>
   );

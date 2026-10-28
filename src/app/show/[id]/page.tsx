@@ -12,7 +12,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export async function generateMetadata({ searchParams }: { searchParams: Search }): Promise<Metadata> {
   const name = one((await searchParams).name);
-  return { title: name ? `${name} · sponsor deck · HostRead` : "Sponsor deck · HostRead" };
+  return { title: name ? `${name}: sponsor deck | HostRead` : "Sponsor deck | HostRead" };
 }
 
 export default async function ShowPage({ params, searchParams }: { params: Params; searchParams: Search }) {

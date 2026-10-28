@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, X } from "lucide-react";
 import { SAFETY_CATEGORIES } from "@/lib/safety";
 import type { SafetyCategory } from "@/lib/types";
 
@@ -9,8 +9,8 @@ export function SafetyToggles({ value, onChange, compact = false }: { value: Saf
   return (
     <fieldset className="flex flex-wrap items-center gap-1.5">
       <legend className="sr-only">Brand-safety exclusions</legend>
-      <span className={`mr-1 inline-flex items-center gap-1.5 text-ink-2 ${compact ? "text-xs" : "text-[13px]"}`}>
-        <ShieldCheck className="size-4" aria-hidden="true" /> Exclude:
+      <span className={`mr-1 inline-flex items-center gap-1.5 text-fg-2 ${compact ? "text-label" : "text-[13px]"}`}>
+        <ShieldCheck className="size-4 text-muted" strokeWidth={1.75} aria-hidden="true" /> Exclude
       </span>
       {SAFETY_CATEGORIES.map((c) => {
         const on = value.includes(c.key);
@@ -21,11 +21,11 @@ export function SafetyToggles({ value, onChange, compact = false }: { value: Saf
             title={c.hint}
             aria-pressed={on}
             onClick={() => toggle(c.key)}
-            className={`rounded-full border px-2.5 py-1 transition ${compact ? "text-xs" : "text-[13px]"} ${
-              on ? "border-ink bg-ink text-bg" : "border-line-2 bg-surface text-ink-2 hover:border-ink/40 hover:text-ink"
+            className={`inline-flex min-h-7 items-center gap-1 rounded-full px-3 py-1 transition-colors duration-150 ${compact ? "text-label" : "text-[13px]"} ${
+              on ? "bg-fg text-bg" : "bg-surface text-fg-2 shadow-[0_0_0_1px_var(--ring-warm)] hover:text-fg hover:shadow-[0_0_0_1px_var(--meta)]"
             }`}
           >
-            {on ? "✕ " : ""}
+            {on && <X className="size-3" strokeWidth={2} aria-hidden="true" />}
             {c.label}
           </button>
         );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSections, templatePitch, allowedReferences } from "@/lib/agent/writer";
+import { parseSections, templatePitch, allowedReferences, stripEmphasis } from "@/lib/agent/writer";
 import { parseBrandList } from "@/lib/agent/baseline";
 import { checkGrounding } from "@/lib/grounding";
 import type { SponsorCard, TasteEntity, DomainKey } from "@/lib/types";
@@ -56,5 +56,14 @@ describe("parseBrandList", () => {
     expect(parseBrandList('["SimpliSafe", "Hello Fresh"]')).toEqual(["SimpliSafe", "Hello Fresh"]);
     expect(parseBrandList('{"brands": ["A1", "B2"]}')).toEqual(["A1", "B2"]);
     expect(parseBrandList("1. **SimpliSafe** – home security\n2. Audible")).toEqual(["SimpliSafe", "Audible"]);
+  });
+});
+
+describe("stripEmphasis", () => {
+  it("removes emphasis and turns dash asides into commas, keeping ranges", () => {
+    expect(stripEmphasis("Listeners love **The Velvet Harbor**—and *June Hartley*.")).toBe("Listeners love The Velvet Harbor, and June Hartley.");
+    expect(stripEmphasis("moody content — favoring films")).toBe("moody content, favoring films");
+    expect(stripEmphasis("a 2–3 sentence read")).toBe("a 2–3 sentence read");
+    expect(stripEmphasis("ends with a dash—.")).toBe("ends with a dash.");
   });
 });

@@ -5,13 +5,15 @@ export const REPO_URL = "https://github.com/sarthak-1111/hostread";
 
 export function Logo({ className = "" }: { className?: string }) {
   return (
-    <Link href="/" className={`group inline-flex items-center gap-2 ${className}`} aria-label="HostRead home">
+    <Link href="/" className={`inline-flex items-center gap-2.5 ${className}`} aria-label="HostRead home">
       <svg viewBox="0 0 64 64" className="size-7" aria-hidden="true">
-        <rect width="64" height="64" rx="16" className="fill-ink" />
+        <rect width="64" height="64" rx="14" className="fill-fg" />
         <circle cx="32" cy="32" r="9" className="fill-accent" />
         <path d="M18 18a20 20 0 0 0 0 28M46 18a20 20 0 0 1 0 28" className="stroke-bg" strokeWidth="4.5" strokeLinecap="round" fill="none" />
       </svg>
-      <span className="text-[17px] font-semibold tracking-tight">HostRead</span>
+      <span className="font-display text-[21px] leading-none" translate="no">
+        HostRead
+      </span>
     </Link>
   );
 }
@@ -24,21 +26,29 @@ export function GithubMark({ className = "size-4" }: { className?: string }) {
   );
 }
 
+const navLink = "hidden rounded-sm px-3 py-2 text-[15px] text-fg-2 transition-colors duration-150 hover:text-fg sm:block";
+
 export function SiteHeader({ mode }: { mode: "live" | "sample" }) {
   return (
-    <header className="no-print sticky top-0 z-30 border-b border-line/70 bg-bg/85 backdrop-blur supports-[backdrop-filter]:bg-bg/70">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+    <header className="no-print sticky top-0 z-30 border-b border-border-soft bg-bg/90 backdrop-blur-sm">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Logo />
-        <nav className="flex items-center gap-1 text-sm text-ink-2">
-          <Link href="/#how" className="hidden rounded-md px-3 py-1.5 hover:bg-surface hover:text-ink sm:block">
+        <nav aria-label="Main" className="flex items-center gap-1">
+          <Link href="/#how" className={navLink}>
             How it works
           </Link>
-          <Link href="/#scoring" className="hidden rounded-md px-3 py-1.5 hover:bg-surface hover:text-ink sm:block">
+          <Link href="/#scoring" className={navLink}>
             How we score
           </Link>
           <ModePill mode={mode} />
-          <a href={REPO_URL} target="_blank" rel="noreferrer" className="rounded-md p-2 hover:bg-surface hover:text-ink" aria-label="Source code on GitHub">
-            <GithubMark />
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="grid size-10 place-items-center rounded-sm text-fg-2 transition-colors duration-150 hover:text-fg"
+            aria-label="Source code on GitHub"
+          >
+            <GithubMark className="size-[18px]" />
           </a>
         </nav>
       </div>
@@ -48,12 +58,12 @@ export function SiteHeader({ mode }: { mode: "live" | "sample" }) {
 
 export function ModePill({ mode }: { mode: "live" | "sample" }) {
   return mode === "live" ? (
-    <span className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink-2" title="Using the live Qloo taste graph">
-      <span className="on-air size-1.5 rounded-full bg-accent" /> Live Qloo data
+    <span className="ml-1 inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-label font-medium text-fg-2 shadow-[0_0_0_1px_var(--ring-warm)]" title="Using the live Qloo taste graph">
+      <span className="on-air size-1.5 rounded-full bg-accent" aria-hidden="true" /> Live Qloo data
     </span>
   ) : (
-    <span className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-amber-soft px-2.5 py-1 text-xs font-semibold text-amber" title="Synthetic sample fixtures — not real Qloo output">
-      <FlaskConical className="size-3.5" /> Sample data
+    <span className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-warn-wash px-3 py-1 text-label font-medium text-warn-ink" title="Synthetic sample fixtures, not real Qloo output">
+      <FlaskConical className="size-3.5" aria-hidden="true" /> Sample data
     </span>
   );
 }
@@ -61,12 +71,11 @@ export function ModePill({ mode }: { mode: "live" | "sample" }) {
 export function SampleBanner({ mode }: { mode: "live" | "sample" }) {
   if (mode !== "sample") return null;
   return (
-    <div role="status" className="border-b border-amber/30 bg-amber-soft text-amber">
-      <div className="mx-auto flex max-w-6xl items-start gap-2 px-4 py-2 text-[13px] leading-snug sm:items-center sm:px-6">
-        <FlaskConical className="mt-0.5 size-4 shrink-0 sm:mt-0" />
+    <div role="status" className="border-b border-warn/30 bg-warn-wash text-fg">
+      <div className="mx-auto flex max-w-6xl items-start gap-2.5 px-4 py-2.5 text-[13px] leading-snug sm:items-center sm:px-6">
+        <FlaskConical className="mt-0.5 size-4 shrink-0 text-warn-ink sm:mt-0" aria-hidden="true" />
         <p>
-          <strong className="font-semibold tracking-wide">SAMPLE DATA</strong> — the shows, brands and tastes on this page are synthetic fixtures used for development. They are
-          not Qloo API output and say nothing about real audiences.
+          <strong className="font-semibold">Sample data.</strong> Synthetic shows, brands and tastes for development, not Qloo API output.
         </p>
       </div>
     </div>
@@ -75,18 +84,17 @@ export function SampleBanner({ mode }: { mode: "live" | "sample" }) {
 
 export function SiteFooter() {
   return (
-    <footer className="no-print border-t border-line">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-ink-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex items-center gap-3">
+    <footer className="no-print border-t border-border-soft">
+      <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-10 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
           <Logo />
-          <span className="hidden sm:inline">·</span>
           <span>Taste data by Qloo. Fit scores are relative rankings, not revenue predictions.</span>
         </div>
-        <div className="flex items-center gap-4">
-          <a className="hover:text-ink" href={REPO_URL} target="_blank" rel="noreferrer">
+        <div className="flex items-center gap-5">
+          <a className="transition-colors duration-150 hover:text-fg" href={REPO_URL} target="_blank" rel="noreferrer">
             Source (MIT)
           </a>
-          <a className="hover:text-ink" href="https://qloo.devpost.com" target="_blank" rel="noreferrer">
+          <a className="transition-colors duration-150 hover:text-fg" href="https://qloo.devpost.com" target="_blank" rel="noreferrer">
             Qloo Agentic Hackathon
           </a>
         </div>

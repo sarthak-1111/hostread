@@ -15,7 +15,7 @@ export interface Suggestion {
 export function SearchBox({
   onPick,
   onFreeText,
-  placeholder = "Search a podcast, e.g. How I Built This",
+  placeholder = "Search for a podcast…",
   size = "lg",
   autoFocus = false,
 }: {
@@ -34,6 +34,12 @@ export function SearchBox({
   const listId = useId();
   const boxRef = useRef<HTMLDivElement>(null);
   const reqId = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Autofocus only with a fine pointer: on phones it would pop the keyboard over the hero.
+  useEffect(() => {
+    if (autoFocus && window.matchMedia("(pointer: fine)").matches) inputRef.current?.focus();
+  }, [autoFocus]);
 
   useEffect(() => {
     const term = q.trim();
@@ -75,6 +81,7 @@ export function SearchBox({
     const exact = items.find((i) => i.name.toLowerCase() === q.trim().toLowerCase());
     if (exact) return onPick(exact);
     if (q.trim().length >= 2) onFreeText(q.trim());
+    else inputRef.current?.focus();
   };
 
   const big = size === "lg";
@@ -86,10 +93,12 @@ export function SearchBox({
           e.preventDefault();
           submit();
         }}
-        className={`flex items-center gap-2 rounded-2xl border border-line-2 bg-surface shadow-card transition focus-within:border-ink/50 focus-within:ring-4 focus-within:ring-accent/10 ${big ? "p-2 pl-4" : "p-1.5 pl-3"}`}
+        className={`flex items-center gap-2 rounded-md bg-surface shadow-[0_0_0_1px_var(--ring-warm),var(--elev-raised)] transition-shadow duration-150 focus-within:shadow-[0_0_0_1px_var(--focus),var(--focus-ring)] ${big ? "p-2 pl-4" : "p-1.5 pl-3"}`}
       >
-        <Search className={`${big ? "size-5" : "size-4"} shrink-0 text-ink-3`} aria-hidden="true" />
+        <Search className={`${big ? "size-5" : "size-4"} shrink-0 text-muted`} strokeWidth={1.75} aria-hidden="true" />
         <input
+          ref={inputRef}
+          name="podcast"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -116,22 +125,21 @@ export function SearchBox({
           aria-autocomplete="list"
           aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
           autoComplete="off"
-          autoFocus={autoFocus}
           spellCheck={false}
-          className={`min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-3 focus-visible:outline-none ${big ? "h-11 text-[17px]" : "h-9 text-[15px]"}`}
+          className={`min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-muted focus-visible:outline-none ${big ? "h-11 text-[17px]" : "h-9 text-[15px]"}`}
         />
-        {loading && <LoaderCircle className="size-4 shrink-0 animate-spin text-ink-3" aria-label="Searching" />}
+        {loading && <LoaderCircle className="size-4 shrink-0 animate-spin text-muted" aria-label="Searching" />}
         <button
           type="submit"
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-ink font-medium text-bg transition hover:opacity-90 disabled:opacity-40 ${big ? "h-11 px-5 text-[15px]" : "h-9 px-3.5 text-sm"}`}
-          disabled={q.trim().length < 2}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-accent-active font-medium text-accent-on transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[0.98] disabled:opacity-50 ${big ? "h-11 px-5 text-[15px]" : "h-9 px-3.5 text-sm"}`}
+          aria-label="Find sponsors"
         >
           <span className="hidden sm:inline">Find sponsors</span>
-          <ArrowRight className="size-4" />
+          <ArrowRight className="size-4" aria-hidden="true" />
         </button>
       </form>
       {open && q.trim().length >= 2 && (items.length > 0 || error || !loading) && (
-        <ul id={listId} role="listbox" className="absolute left-0 right-0 top-full z-40 mt-2 max-h-[360px] overflow-auto rounded-2xl border border-line bg-surface p-1.5 shadow-card">
+        <ul id={listId} role="listbox" className="absolute left-0 right-0 top-full z-40 mt-2 max-h-[360px] overflow-auto rounded-md bg-surface p-1.5 shadow-[0_0_0_1px_var(--border-soft),var(--elev-raised)]">
           {items.map((s, i) => (
             <li
               key={s.id}
@@ -143,18 +151,18 @@ export function SearchBox({
                 e.preventDefault();
                 onPick(s);
               }}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl px-2.5 py-2 ${i === active ? "bg-surface-2" : ""}`}
+              className={`flex cursor-pointer items-center gap-3 rounded-sm px-2.5 py-2 ${i === active ? "bg-surface-warm" : ""}`}
             >
               <EntityImage src={s.image} name={s.name} className="size-9" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[15px] font-medium">{s.name}</div>
-                {s.subtitle && <div className="truncate text-xs text-ink-3">{s.subtitle}</div>}
+                {s.subtitle && <div className="truncate text-label text-muted">{s.subtitle}</div>}
               </div>
-              {s.sample && <span className="rounded bg-amber-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber">sample</span>}
+              {s.sample && <span className="rounded-full bg-warn-wash px-2 py-0.5 text-label font-medium text-warn-ink">Sample</span>}
             </li>
           ))}
           {!items.length && !loading && (
-            <li className="px-3 py-3 text-sm text-ink-3">{error ?? `No podcasts found for “${q.trim()}”. Press Enter to let the agent search anyway.`}</li>
+            <li className="px-3 py-3 text-sm text-muted">{error ?? `No podcasts found for “${q.trim()}”. Press Enter and the agent will search for it.`}</li>
           )}
         </ul>
       )}

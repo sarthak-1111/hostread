@@ -22,10 +22,10 @@ export function CopyButton({ text, label, className = "" }: { text: string; labe
         setDone(true);
         setTimeout(() => setDone(false), 1600);
       }}
-      className={`inline-flex items-center gap-1.5 rounded-lg border border-line-2 bg-surface px-3 py-1.5 text-[13px] font-medium transition hover:border-ink/40 ${className}`}
+      className={`inline-flex min-h-9 items-center gap-1.5 rounded-sm bg-surface px-3 py-1.5 text-[13px] font-medium text-fg shadow-[0_0_0_1px_var(--ring-warm)] transition-shadow duration-150 hover:shadow-[0_0_0_1px_var(--meta)] ${className}`}
     >
-      {done ? <Check className="size-3.5 text-green" /> : <Copy className="size-3.5" />}
-      {done ? "Copied" : label}
+      {done ? <Check className="size-3.5 text-success-text" aria-hidden="true" /> : <Copy className="size-3.5" strokeWidth={1.75} aria-hidden="true" />}
+      <span aria-live="polite">{done ? "Copied" : label}</span>
     </button>
   );
 }

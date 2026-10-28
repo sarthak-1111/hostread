@@ -55,17 +55,17 @@ function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
   const demo = demoLine(input.demographics);
   const system =
     "You write sponsorship materials for independent podcast hosts. GROUNDING RULE: the only cultural references you may mention " +
-    "(films, TV shows, artists, books, restaurants, places, podcasts, celebrities) are the ones in ALLOWED REFERENCES — copy their names exactly. " +
+    "(films, TV shows, artists, books, restaurants, places, podcasts, celebrities) are the ones in ALLOWED REFERENCES. Copy their names exactly. " +
     "Never mention any other title, artist, celebrity, place or brand. Never invent statistics, download numbers, growth or ranking claims (e.g. 'fast-growing', 'top-rated'), " +
-    "prices, product features or personal anecdotes — " +
+    "prices, product features or personal anecdotes: " +
     "the host adds their own experience later. Use the placeholders [Host Name], [URL] and [PROMO CODE], and the line [personal experience] where the host " +
-    "will add a sentence about using the product. Plain text: no markdown emphasis.";
+    "will add a sentence about using the product. Plain text: no markdown emphasis and no em dashes.";
   const user =
     `PODCAST: ${podcast.name}${podcast.genres?.length ? ` (${podcast.genres.join(", ")})` : ""}\n` +
     `BRAND: ${card.brand.name}${card.brand.category ? ` (category: ${card.brand.category})` : ""}\n` +
     (card.brand.description ? `BRAND DESCRIPTION (from the taste graph): ${card.brand.description}\n` : "") +
     (card.fit ? `FIT SCORE: ${card.fit}/100 (a relative ranking within this show's sponsor deck, not a sales forecast)\n` : "") +
-    `SHARED FAVOURITES — this show's listeners and ${card.brand.name}'s fans both love:\n${evidence || "- (none found)"}\n` +
+    `SHARED FAVOURITES: this show's listeners and ${card.brand.name}'s fans both love:\n${evidence || "- (none found)"}\n` +
     (listenerTop ? `LISTENERS ALSO LOVE: ${listenerTop}\n` : "") +
     (demo ? `AUDIENCE: ${demo}\n` : "") +
     `ALLOWED REFERENCES: ${allowed.map((a) => `"${a}"`).join(", ")}\n\n` +
@@ -76,13 +76,20 @@ function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
     `### AD SCRIPT\nA 45–60 second host-read ad (120–150 words), first person and conversational, that speaks to listeners through one or two shared favourites ` +
     `(as tastes they have, not as things the host did), describes ${card.brand.name} only in general terms, contains the line [personal experience], ` +
     `and ends with [URL] and [PROMO CODE].\n` +
-    (feedback ? `\nIMPORTANT — fix this in your rewrite: ${feedback}\n` : "");
+    (feedback ? `\nIMPORTANT, fix this in your rewrite: ${feedback}\n` : "");
   return { system, user };
 }
 
-/** Drop markdown emphasis markers the model sometimes adds (*Title*, **bold**, _x_). */
+/**
+ * Drop markdown emphasis markers the model sometimes adds (*Title*, **bold**, _x_)
+ * and turn dash asides into commas. En dashes inside ranges (2–3) are kept.
+ */
 export function stripEmphasis(s: string): string {
-  return s.replace(/\*{1,3}([^*\n]+?)\*{1,3}/g, "$1").replace(/(^|\s)_([^_\n]+?)_(?=\s|[.,!?;:]|$)/g, "$1$2");
+  return s
+    .replace(/\*{1,3}([^*\n]+?)\*{1,3}/g, "$1")
+    .replace(/(^|\s)_([^_\n]+?)_(?=\s|[.,!?;:]|$)/g, "$1$2")
+    .replace(/[ \t]*\u2014[ \t]*|[ \t]+\u2013[ \t]+/g, ", ")
+    .replace(/,\s*([,.;:!?])/g, "$1");
 }
 
 export function parseSections(text: string): { subject: string; email: string; adScript: string } | null {
