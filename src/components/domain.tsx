@@ -7,7 +7,7 @@ export const DOMAIN_META: Record<DomainKey, { label: string; Icon: typeof Music 
   film: { label: "Film", Icon: Clapperboard },
   tv: { label: "TV", Icon: Tv },
   music: { label: "Music", Icon: Music },
-  dining: { label: "Dining", Icon: UtensilsCrossed },
+  dining: { label: "Food & drink", Icon: UtensilsCrossed },
   books: { label: "Books", Icon: BookOpen },
   travel: { label: "Places", Icon: MapPin },
   podcasts: { label: "Podcasts", Icon: Headphones },

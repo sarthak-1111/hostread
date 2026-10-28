@@ -4,7 +4,7 @@ export const DOMAINS: Record<DomainKey, DomainInfo> = {
   film: { key: "film", label: "Film", qlooType: "urn:entity:movie", noun: "film" },
   tv: { key: "tv", label: "TV", qlooType: "urn:entity:tv_show", noun: "show" },
   music: { key: "music", label: "Music", qlooType: "urn:entity:artist", noun: "artist" },
-  dining: { key: "dining", label: "Dining", qlooType: "urn:entity:place", noun: "restaurant" },
+  dining: { key: "dining", label: "Food & drink", qlooType: "urn:entity:brand", noun: "food or drink brand" },
   books: { key: "books", label: "Books", qlooType: "urn:entity:book", noun: "book" },
   travel: { key: "travel", label: "Places", qlooType: "urn:entity:destination", noun: "destination" },
   podcasts: { key: "podcasts", label: "Podcasts", qlooType: "urn:entity:podcast", noun: "podcast" },

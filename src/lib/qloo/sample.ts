@@ -2,7 +2,7 @@
 //
 // Everything in this file is generated in code from fictional names and a
 // made-up "taste cluster" model, so the UI, agent loop and scoring can be
-// built before a Qloo key exists. Shows, brands, films, artists, restaurants
+// built before a Qloo key exists. Shows, brands, films, artists, food brands
 // and books here are invented. Every entity is flagged `sample: true` and the
 // UI shows a SAMPLE DATA banner whenever this module is in use.
 //
@@ -142,7 +142,7 @@ const WORDS = {
   plural: ["Owls", "Tides", "Satellites", "Foxes", "Parades", "Machines", "Ghosts", "Pilots", "Gardens", "Lanterns", "Wolves", "Strangers", "Arcades", "Rivers", "Saints"],
   first: ["June", "Marlow", "Ines", "Theo", "Calla", "Rafe", "Odile", "Bram", "Sunny", "Wren", "Ezra", "Lux", "Nadia", "Otis", "Pia"],
   last: ["Hartley", "Okafor", "Lindqvist", "Moreau", "Castellanos", "Achebe", "Whitlock", "Sato", "Delacroix", "Brennan", "Varga", "Quill", "Abernathy", "Novak", "Ferreira"],
-  food: ["Noodle Bar", "Taqueria", "Oyster House", "Smokehouse", "Trattoria", "Bakery", "Ramen Counter", "Bistro", "Dumpling House", "Wine Bar", "Pizzeria", "Cantina", "Supper Club", "Diner", "Izakaya"],
+  food: ["Cold Brew", "Granola", "Hot Sauce", "Sparkling Tea", "Pancake Mix", "Kombucha", "Snack Bars", "Coffee Roasters", "Popcorn", "Frozen Yogurt", "Pasta Sauce", "Kettle Chips", "Nut Butter", "Lemonade", "Bakehouse"],
   place: ["Port Ellery", "Lake Morrow", "Calder Bay", "Isle of Venn", "Ashgrove Valley", "Mount Tabora", "Saltcombe", "Bellmere Coast", "Rio Seco", "Kestrel Highlands", "Old Avon Quarter", "Larkspur Springs", "Teller Island", "Vasa Peninsula", "Juniper Flats"],
 };
 
@@ -178,7 +178,7 @@ function subtitleFor(domain: DomainKey, r: () => number): string {
     case "books":
       return `Book · ${year}`;
     case "dining":
-      return "Restaurant";
+      return "Food & drink brand";
     case "travel":
       return "Destination";
     case "podcasts":
@@ -347,7 +347,7 @@ export function sampleDemographics(signalId: string): Demographics | null {
   };
 }
 
-const SAMPLE_CITIES = ["Austin", "Chicago", "Denver", "Portland", "Atlanta", "Brooklyn", "Minneapolis", "Nashville", "Toronto", "London", "Seattle", "Philadelphia"];
+const SAMPLE_CITIES = ["Austin", "Chicago", "Denver", "Portland, OR", "Atlanta", "New York", "Minneapolis", "Nashville", "Columbus", "Kansas City", "Seattle", "Philadelphia"];
 
 export function sampleGeography(signalId: string): GeoPoint[] | null {
   const v = vecForSignal(signalId);

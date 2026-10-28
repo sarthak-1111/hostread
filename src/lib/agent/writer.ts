@@ -55,7 +55,7 @@ function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
   const demo = demoLine(input.demographics);
   const system =
     "You write sponsorship materials for independent podcast hosts. GROUNDING RULE: the only cultural references you may mention " +
-    "(films, TV shows, artists, books, restaurants, places, podcasts, celebrities) are the ones in ALLOWED REFERENCES. Copy their names exactly. " +
+    "(films, TV shows, artists, books, food and drink brands, places, podcasts, celebrities) are the ones in ALLOWED REFERENCES. Copy their names exactly. " +
     "Never mention any other title, artist, celebrity, place or brand. Never invent statistics, download numbers, growth or ranking claims (e.g. 'fast-growing', 'top-rated'), " +
     "prices, product features or personal anecdotes: " +
     "the host adds their own experience later. Use the placeholders [Host Name], [URL] and [PROMO CODE], and the line [personal experience] where the host " +

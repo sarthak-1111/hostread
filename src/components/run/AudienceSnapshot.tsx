@@ -127,8 +127,9 @@ export function AudienceSnapshot({
           {geography && geography.length > 0 && (
             <div className="print-avoid">
               <h3 className="flex items-center gap-1.5 border-b border-border-soft pb-1.5 text-[14px] font-semibold">
-                <MapPin className="size-4 text-muted" strokeWidth={1.75} aria-hidden="true" /> Where listeners over-index
+                <MapPin className="size-4 text-muted" strokeWidth={1.75} aria-hidden="true" /> US metros where listeners over-index
               </h3>
+              <p className="mt-0.5 text-label text-muted">From Qloo&apos;s heatmap, grouped by nearest metro.</p>
               <ol className="mt-3 space-y-1.5">
                 {geography.slice(0, 6).map((g, i) => (
                   <li key={`${g.name}-${i}`} className="flex items-baseline gap-2.5 text-[14px]">

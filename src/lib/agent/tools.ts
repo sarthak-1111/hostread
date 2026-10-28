@@ -271,7 +271,7 @@ async function toolDemographics(ctx: RunContext, thought?: string): Promise<Tool
 }
 
 async function toolGeography(ctx: RunContext, thought?: string): Promise<ToolResult> {
-  const g = await traced(ctx, { actor: "agent", tool: "geography", title: "Where the audience over-indexes", params: { "filter.type": "urn:heatmap" }, thought }, async () => {
+  const g = await traced(ctx, { actor: "agent", tool: "geography", title: "Where the audience over-indexes", params: { "filter.type": "urn:heatmap", "output.heatmap.boundary": "urn:geohash" }, thought }, async () => {
     const v = await loadGeography(ctx);
     return { value: v, summary: v?.length ? `Top: ${v.slice(0, 3).map((x) => x.name).join(", ")}` : "Not available", counts: { places: v?.length ?? 0 } };
   });

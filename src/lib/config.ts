@@ -43,9 +43,11 @@ export const config = {
     pitchesUpFront: num("AGENT_PITCHES_UP_FRONT", 3),
   },
   limits: {
-    runsPerIpPer10Min: num("RATE_RUNS_PER_IP_10MIN", 8),
-    runsPerIpPerDay: num("RATE_RUNS_PER_IP_DAY", 60),
-    globalRunsPerDay: num("RATE_GLOBAL_RUNS_DAY", 500),
+    runsPerIpPer10Min: num("RATE_RUNS_PER_IP_10MIN", 6),
+    runsPerIpPerDay: num("RATE_RUNS_PER_IP_DAY", 25),
+    globalRunsPerDay: num("RATE_GLOBAL_RUNS_DAY", 150),
+    // Fresh runs stop when Qloo reports fewer monthly calls left than this (~60 calls a run).
+    qlooMonthlyReserve: num("QLOO_MONTHLY_RESERVE", 2500),
     searchesPerIpPerMin: num("RATE_SEARCH_PER_IP_MIN", 90),
     pitchesPerIpPer10Min: num("RATE_PITCH_PER_IP_10MIN", 20),
   },
@@ -62,7 +64,7 @@ export const config = {
     // memory | kv | blobs; unset = kv when KV credentials exist, else memory.
     backend: process.env.CACHE_BACKEND || "",
     apiTtlSec: num("CACHE_API_TTL_SEC", 60 * 60 * 24 * 7),
-    runTtlSec: num("CACHE_RUN_TTL_SEC", 60 * 60 * 24),
+    runTtlSec: num("CACHE_RUN_TTL_SEC", 60 * 60 * 24 * 14),
     kvUrl: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "",
     kvToken: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "",
   },

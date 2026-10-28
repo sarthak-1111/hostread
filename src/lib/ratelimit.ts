@@ -1,7 +1,8 @@
 // Per-IP rate limits and a daily global cap, so judges can't (accidentally)
 // exhaust the API keys. Cached runs never count against these.
-import { config } from "./config";
+import { config, dataMode } from "./config";
 import { incrWithTtl, peekCounter } from "./cache";
+import { qlooMonthlyRemaining } from "./qloo/client";
 
 export function clientIp(req: Request): string {
   const h = req.headers;
@@ -18,6 +19,15 @@ export interface LimitResult {
 const day = () => new Date().toISOString().slice(0, 10);
 
 export async function checkRunLimit(ip: string): Promise<LimitResult> {
+  // The Qloo monthly quota is the one limit every instance sees the same way.
+  const left = qlooMonthlyRemaining();
+  if (dataMode() === "live" && left !== undefined && left < config.limits.qlooMonthlyReserve) {
+    return {
+      ok: false,
+      message: "HostRead has used its taste-data budget for now. Cached shows (like the examples on the home page) still work instantly.",
+      retryAfterSec: 3600,
+    };
+  }
   const global = await peekCounter(`global:${day()}`);
   if (global >= config.limits.globalRunsPerDay) {
     return {

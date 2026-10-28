@@ -9,13 +9,23 @@ import { config, dataMode, type DataMode } from "../config";
 import { cacheGet, cacheSet, hashKey } from "../cache";
 import { HttpError, Semaphore, fetchWithTimeout, withRetry } from "../limiter";
 import { DOMAINS } from "../domains";
+import { metrosFromCells, type HeatCell } from "../metros";
 import type { BrandEntity, Demographics, DomainKey, GeoPoint, PodcastEntity, Tag, TasteEntity } from "../types";
 import * as sample from "./sample";
 
 /** Bump when normalisers change so stale cache entries are ignored. */
-const NORM_VERSION = "n1";
+const NORM_VERSION = "n2";
 
 const qlooGate = new Semaphore(config.qloo.maxConcurrency);
+
+// The hackathon key has a monthly quota shared by every server instance. Each
+// response reports what's left, so the latest value is the real global budget.
+let monthlyRemaining: number | undefined;
+
+/** Calls left this month according to the most recent Qloo response, if any. */
+export function qlooMonthlyRemaining(): number | undefined {
+  return monthlyRemaining;
+}
 
 export class BudgetExceededError extends Error {
   constructor(max: number) {
@@ -91,18 +101,26 @@ export function normEntity(e: any, rank?: number): TasteEntity {
   };
 }
 
-function brandCategory(e: TasteEntity): string | undefined {
-  const t = e.tags?.find((x) => /category|subtype|brand/i.test(x.type ?? "") && !/keyword/i.test(x.type ?? ""));
-  return t?.name;
+const GENERIC_INDUSTRY = /^(retail|e-?commerce|website|online|other|consumer goods)$/i;
+
+/** Brand category: Qloo's industry list first (most specific), then brand tags. */
+function brandCategory(e: TasteEntity, props: any): string | undefined {
+  const industries: unknown[] = Array.isArray(props?.industry) ? props.industry : Array.isArray(props?.industries) ? props.industries : [];
+  const industry = industries.find((x): x is string => typeof x === "string" && x.trim() !== "" && !GENERIC_INDUSTRY.test(x.trim()));
+  if (industry) return industry.trim().replace(/^\w/, (c) => c.toUpperCase());
+  const subtype = e.tags?.find((x) => /brand_subtype/.test(x.type ?? "") && x.name !== "Other");
+  const genre = e.tags?.find((x) => /genre:brand/.test(x.type ?? ""));
+  return (subtype ?? genre)?.name;
 }
 
-function toBrand(e: TasteEntity): BrandEntity {
-  const category = brandCategory(e);
+function toBrand(e: TasteEntity, props?: any): BrandEntity {
+  const category = brandCategory(e, props);
   return { ...e, category, subtitle: e.subtitle ?? category };
 }
 
 function toPodcast(e: TasteEntity): PodcastEntity {
-  const genres = (e.tags ?? []).filter((t) => /genre|category/i.test(t.type ?? "")).map((t) => t.name).slice(0, 4);
+  // Podcast genres come as urn:tag:genre:media tags, including a generic "Podcasts".
+  const genres = (e.tags ?? []).filter((t) => /genre|category/i.test(t.type ?? "") && !/^podcasts?$/i.test(t.name)).map((t) => t.name).slice(0, 4);
   return { ...e, genres, subtitle: e.subtitle ?? (genres.length ? genres.join(" · ") : undefined) };
 }
 
@@ -122,16 +140,15 @@ function normDemographics(json: any): Demographics | null {
   return { age: nums(q.age), gender: nums(q.gender) };
 }
 
+/** Geohash heatmap cells (coordinates + affinity, no names) grouped into US metros. */
 function normHeatmap(json: any): GeoPoint[] | null {
   const h = json?.results?.heatmap;
   if (!Array.isArray(h) || h.length === 0) return null;
-  const pts = h
-    .map((p: any) => ({
-      name: String(p?.location?.name ?? p?.location?.city ?? p?.name ?? p?.location?.geohash ?? ""),
-      affinity: Number(p?.query?.affinity ?? p?.affinity ?? 0),
-    }))
-    .filter((p: GeoPoint) => p.name);
-  return pts.sort((a: GeoPoint, b: GeoPoint) => b.affinity - a.affinity).slice(0, 8);
+  const cells: HeatCell[] = h
+    .map((p: any) => ({ lat: Number(p?.location?.latitude), lon: Number(p?.location?.longitude), affinity: Number(p?.query?.affinity ?? 0) }))
+    .filter((c: HeatCell) => Number.isFinite(c.lat) && Number.isFinite(c.lon) && Number.isFinite(c.affinity));
+  const metros = metrosFromCells(cells);
+  return metros.length ? metros : null;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -170,6 +187,8 @@ export class TasteClient {
         withRetry(
           async () => {
             const res = await fetchWithTimeout(url, { headers: { "X-Api-Key": apiKey, Accept: "application/json" }, cache: "no-store" }, config.qloo.timeoutMs);
+            const left = Number(res.headers.get("x-month-ratelimit-remaining"));
+            if (res.headers.has("x-month-ratelimit-remaining") && Number.isFinite(left)) monthlyRemaining = left;
             const text = await res.text();
             if (!res.ok) throw new HttpError(`Qloo ${res.status}`, res.status, text.slice(0, 300));
             return JSON.parse(text) as unknown;
@@ -212,7 +231,7 @@ export class TasteClient {
     if (this.mode === "sample") return this.simulate(() => sample.sampleSearchBrands(query, take));
     return this.get("/search", { query, types: "urn:entity:brand", take }, (json) =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      insightsEntities(json).map((e: any, i: number) => toBrand(normEntity(e, i + 1))),
+      insightsEntities(json).map((e: any, i: number) => toBrand(normEntity(e, i + 1), e?.properties)),
     );
   }
 
@@ -242,8 +261,10 @@ export class TasteClient {
       "signal.interests.entities": signalId,
       take,
     };
-    if (domain === "dining") params["filter.tags"] = process.env.QLOO_DINING_TAG || "urn:tag:category:place:restaurant";
-    if (domain === "podcasts") params["filter.exclude.entities"] = signalId;
+    // Food & drink is a brand domain: place results cluster around one city, brands are national.
+    if (domain === "dining") params["filter.tags"] = process.env.QLOO_DINING_TAG || "urn:tag:genre:brand:food_and_beverage";
+    // Same-type domains would otherwise list the signal itself.
+    if (domain === "podcasts" || domain === "dining") params["filter.exclude.entities"] = signalId;
     return this.get("/v2/insights", params, (json) =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       insightsEntities(json).map((e: any, i: number) => normEntity(e, i + 1)),
@@ -255,7 +276,7 @@ export class TasteClient {
     if (this.mode === "sample") return this.simulate(() => sample.sampleInsights({ domain: "brands", signalId, take }) as BrandEntity[]);
     return this.get("/v2/insights", { "filter.type": "urn:entity:brand", "signal.interests.entities": signalId, take }, (json) =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      insightsEntities(json).map((e: any, i: number) => toBrand(normEntity(e, i + 1))),
+      insightsEntities(json).map((e: any, i: number) => toBrand(normEntity(e, i + 1), e?.properties)),
     );
   }
 
@@ -267,7 +288,7 @@ export class TasteClient {
       "/v2/insights",
       { "filter.type": "urn:entity:brand", "signal.interests.entities": signalId, "filter.results.entities": brandIds.join(","), take: Math.min(50, brandIds.length) },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (json) => insightsEntities(json).map((e: any, i: number) => toBrand(normEntity(e, i + 1))),
+      (json) => insightsEntities(json).map((e: any, i: number) => toBrand(normEntity(e, i + 1), e?.properties)),
     );
   }
 
@@ -287,9 +308,16 @@ export class TasteClient {
 
   async geography(signalId: string): Promise<GeoPoint[] | null> {
     if (this.mode === "sample") return this.simulate(() => sample.sampleGeography(signalId));
+    // The heatmap needs a location; geohash cells are the only boundary that stays
+    // small (a locality boundary returns every city with its outline polygon).
     return this.get(
       "/v2/insights",
-      { "filter.type": "urn:heatmap", "signal.interests.entities": signalId, "output.heatmap.boundary": process.env.QLOO_HEATMAP_BOUNDARY || "city", take: 20 },
+      {
+        "filter.type": "urn:heatmap",
+        "signal.interests.entities": signalId,
+        "filter.location.query": process.env.QLOO_HEATMAP_LOCATION || "United States",
+        "output.heatmap.boundary": "urn:geohash",
+      },
       normHeatmap,
     );
   }

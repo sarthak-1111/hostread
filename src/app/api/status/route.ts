@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { config, dataMode, llmLabel } from "@/lib/config";
+import { qlooMonthlyRemaining } from "@/lib/qloo/client";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ export async function GET() {
       execution: config.run.execution,
       store: config.cache.backend || (config.cache.kvUrl ? "kv" : "memory"),
       deckArchive: process.env.BLOB_READ_WRITE_TOKEN ? "vercel-blob" : "none",
+      // As last reported to this instance; absent until it has made a Qloo call.
+      qlooMonthlyRemaining: qlooMonthlyRemaining() ?? null,
       configured: {
         qlooKey: Boolean(process.env.QLOO_API_KEY),
         llmKey: Boolean(config.llm.apiKey),

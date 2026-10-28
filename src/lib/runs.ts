@@ -44,15 +44,15 @@ export function runKey(input: RunInput): string {
 }
 
 // Deck archive: on Vercel, function instances don't share memory, so finished
-// decks are also written to a public Vercel Blob store (BLOB_READ_WRITE_TOKEN).
-// Reads go through the Blob CDN by pathname; the path is the hashed run key and
-// a deck holds nothing the share link doesn't already show.
+// decks are also written to a private Vercel Blob store (BLOB_READ_WRITE_TOKEN).
+// Private server-side caching is what Qloo's terms allow; reads are authenticated
+// with the same token and keyed by the hashed run key.
 const hasDeckArchive = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const deckPath = (key: string) => `decks/${key.replace(/:/g, "/")}.json`;
 const ARCHIVE_TIMEOUT_MS = 5000;
 
 async function readArchivedDeck(key: string): Promise<RunResult | undefined> {
-  const res = await blobGet(deckPath(key), { access: "public", abortSignal: AbortSignal.timeout(ARCHIVE_TIMEOUT_MS) });
+  const res = await blobGet(deckPath(key), { access: "private", abortSignal: AbortSignal.timeout(ARCHIVE_TIMEOUT_MS) });
   if (!res?.stream) return undefined;
   const deck = JSON.parse(await new Response(res.stream).text()) as RunResult;
   const ageMs = Date.now() - Date.parse(deck.createdAt);
@@ -71,7 +71,7 @@ export async function saveRun(key: string, result: RunResult): Promise<void> {
   await cacheSet(key, result, config.cache.runTtlSec);
   if (!hasDeckArchive()) return;
   await blobPut(deckPath(key), JSON.stringify(result), {
-    access: "public",
+    access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
