@@ -139,7 +139,7 @@ export function checkGrounding(text: string, allowedRefs: string[], alwaysAllowe
   for (const r of refs) {
     if (isAllowedPhrase(r, allowed)) continue;
     // "The Velvet Harbor and Taylor Swift" -> report only the unknown part
-    const parts = r.split(/\s+(?:and|&)\s+/i).map((x) => x.replace(/^(the|a|an)\s+(?=[A-Z])/i, (m) => m));
+    const parts = r.split(/\s+(?:and|&)\s+/i);
     const bad = parts.filter((x) => !isAllowedPhrase(x, allowed));
     for (const b of bad.length ? bad : [r]) offenders.add(b);
   }

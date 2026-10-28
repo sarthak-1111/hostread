@@ -147,7 +147,8 @@ export async function loadGeography(ctx: RunContext) {
 
 /** Resolve the baseline's brand names against Qloo and score their audience affinity. */
 export async function checkBaseline(ctx: RunContext, names: string[] | null): Promise<BaselineResult> {
-  if (!names) return { available: false, picks: [], note: "The plain-LLM baseline wasn't available for this run." };
+  if (!names || names.length === 0)
+    return { available: false, picks: [], note: "The plain-LLM baseline wasn't available for this run, so no brand gets a surprise bonus." };
   const p = requirePodcast(ctx);
   const cands = ctx.state.candidates ?? [];
   const picks: BaselinePick[] = names.slice(0, 10).map((name) => ({ name, inDeck: false }));
@@ -205,7 +206,9 @@ export async function rank(ctx: RunContext) {
     names = await Promise.race([s.baselineNames, new Promise<null>((r) => setTimeout(() => r(null), 90_000))]);
   }
   const baseline = await checkBaseline(ctx, names);
-  const namedByBaseline = (b: BrandEntity) => (names ?? []).some((n) => sameBrand(n, b.name)) || baseline.picks.some((p) => p.matched?.id === b.id);
+  // Without a baseline we can't claim anything is a surprise: S = 0 for every brand.
+  const namedByBaseline = (b: BrandEntity) =>
+    !baseline.available || (names ?? []).some((n) => sameBrand(n, b.name)) || baseline.picks.some((p) => p.matched?.id === b.id);
   const overlaps = [...s.overlaps.values()];
   const deck = scoreDeck({ pool: cands, overlaps, namedByBaseline });
   for (const pick of baseline.picks) pick.inDeck = deck.some((c) => c.brand.id === pick.matched?.id || sameBrand(c.brand.name, pick.name));

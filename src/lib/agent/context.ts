@@ -20,6 +20,8 @@ import type {
 
 export interface RunState {
   podcast?: PodcastEntity;
+  /** Matches from the last resolve_podcast search, for select_id. */
+  podcastCandidates?: PodcastEntity[];
   profile: Map<DomainKey, TasteEntity[]>;
   /** Candidates after brand-safety filtering, in Qloo affinity order. */
   candidates?: BrandEntity[];
@@ -97,8 +99,11 @@ export async function traced<T>(ctx: RunContext, meta: StepMeta, fn: () => Promi
     throw err;
   } finally {
     step.ms = Date.now() - t0;
-    step.apiCalls = ctx.qloo.stats.apiCalls - before.api;
-    step.cached = step.apiCalls === 0 && ctx.qloo.stats.cachedCalls > before.cached;
+    // LLM steps run concurrently with tool steps, so a counter diff would misattribute calls.
+    if (meta.actor !== "llm") {
+      step.apiCalls = ctx.qloo.stats.apiCalls - before.api;
+      step.cached = step.apiCalls === 0 && ctx.qloo.stats.cachedCalls > before.cached;
+    }
     ctx.emit({ type: "step", step: { ...step } });
   }
 }
