@@ -53,12 +53,12 @@ What the LLM is **not** allowed to do is just as important:
 
 ## How we built it
 
-- **Next.js 15 + TypeScript** web app with server-side API routes; the run streams to the browser over Server-Sent Events.
-- **One data-access module** for Qloo (`TasteClient`), with a runtime cache (memory, optional Redis-compatible KV) and request de-duplication, so repeat demos are instant. Raw API payloads are never stored or committed.
+- **Next.js 15 + TypeScript** web app with server-side API routes. A run is a job: on Netlify it executes in a background function, writes its trace to a job log in Netlify Blobs, and the browser polls that log, so long agent runs survive the 60-second limit on normal functions.
+- **One data-access module** for Qloo (`TasteClient`), with a runtime cache (memory, Netlify Blobs or Upstash Redis) and request de-duplication, so repeat demos are instant. Raw API payloads are never stored or committed.
 - **LLM-agnostic agent loop** over the OpenAI chat-completions API: we developed against `gpt-oss:120b` on a local Ollama server and deploy against a hosted endpoint by changing three env vars.
 - **Deterministic scoring and grounding** with unit tests.
 - **Per-IP rate limits and a daily global cap** so the hosted demo stays up for every judge; cached decks never count.
-- **Tailwind CSS** UI with a print stylesheet for the media kit, dark mode, and a phone layout.
+- **Tailwind CSS** UI on the `claude` style from Open Design (parchment surfaces, one terracotta accent, Georgia headings), reviewed against the Vercel Web Interface Guidelines and checked in Playwright on desktop, phone and dark mode. The media kit has a print stylesheet.
 
 ## Challenges we ran into
 
@@ -82,7 +82,7 @@ What the LLM is **not** allowed to do is just as important:
 
 ## Built with
 
-Qloo Insights API (Taste Analysis) and Search, Next.js, React, TypeScript, Tailwind CSS, zod, an OpenAI-compatible LLM (gpt-oss-120b), Vercel.
+Qloo Insights API (Taste Analysis) and Search, Next.js, React, TypeScript, Tailwind CSS, zod, an OpenAI-compatible LLM (gpt-oss-120b), Netlify (Functions, Background Functions, Blobs).
 
 ## Links
 

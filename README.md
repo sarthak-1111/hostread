@@ -46,9 +46,13 @@ Qloo data is cached at runtime (memory, optional Redis-compatible KV). Nothing f
 
 ```mermaid
 flowchart LR
-  U[Browser] -- SSE stream --> R[/api/run/]
+  U[Browser] -- start --> R[/api/run/]
+  U -- poll --> E[/api/run/events/]
   R --> RM[Run manager<br/>cache + in-flight de-dup<br/>rate limits]
-  RM --> A[Agent loop<br/>OpenAI-compatible LLM<br/>tool calling]
+  RM -- job --> BG[Background function<br/>agent-run, up to 15 min]
+  BG --> A[Agent loop<br/>OpenAI-compatible LLM<br/>tool calling]
+  A -. events .-> J[(Job log<br/>Netlify Blobs)]
+  J -.-> E
   A -->|tools| T[Tool layer<br/>zod-validated args]
   T --> C[TasteClient<br/>single data-access module]
   C -->|X-Api-Key| Q[(Qloo<br/>hackathon API)]
@@ -67,6 +71,8 @@ flowchart LR
 5. The **writer** drafts a pitch email and ad script for the top brands (others on demand). A checker extracts every proper-noun reference and rejects any entity the API didn't return in this run; the writer regenerates with feedback, and falls back to a deterministic template if needed.
 
 **Guardrails:** max agent steps, a per-run API-call budget, a run time budget, timeouts and retries with exponential backoff on every call, at most 4 concurrent Qloo requests, zod validation of every tool argument. If the LLM stops early or is unreachable, the guardrails complete the plan with the same tools (marked in the trace), so a deck is always produced.
+
+**Runs are jobs.** `POST /api/run` returns a cached deck instantly, joins a run already in flight for the same show and settings, or starts a job. On Netlify the job runs in a background function (up to 15 minutes, well past the 60 s limit on normal functions), writes its trace events to a job log in Netlify Blobs, and the browser polls `/api/run/events` to replay them live. Locally the same job runs inside the dev server.
 
 **Ollama/gpt-oss resilience:** Ollama sometimes answers a gpt-oss tool call with HTTP 500 “error parsing tool call”. The client retries, then switches to *text tool mode*: tools are described in the prompt, the model replies with JSON, and our code parses it.
 
@@ -118,14 +124,21 @@ npm run probe     # API verification probe (needs QLOO_API_KEY); prints a summar
 | `LLM_REASONING_EFFORT` | `low` | Sent as `reasoning_effort`; empty to omit. |
 | `AGENT_MAX_STEPS`, `AGENT_MAX_API_CALLS`, `AGENT_RUN_TIMEOUT_MS` | 12, 80, 240000 | Agent guardrails. |
 | `RATE_RUNS_PER_IP_10MIN`, `RATE_RUNS_PER_IP_DAY`, `RATE_GLOBAL_RUNS_DAY` | 8, 60, 500 | Limits on fresh runs (cached runs are free). |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | — | Optional Upstash / Vercel KV for a shared cache and global rate limits. |
+| `LLM_LABEL` | — | Shown in the UI instead of `<model> @ <endpoint host>`. |
+| `RUN_EXECUTION` | `inline` | `inline` runs jobs in the web server; `background` hands them to the Netlify background function. |
+| `JOB_SECRET` | — | Shared secret between `/api/run` and the background function (any long random string). |
+| `CACHE_BACKEND` | auto | `memory`, `kv` or `blobs` (Netlify Blobs). Unset: `kv` when the KV vars are set, else `memory`. |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | — | Optional Upstash Redis for a shared cache, job logs and rate limits off Netlify. |
 
-## Deploy (Vercel)
+## Deploy (Netlify)
 
-1. Import the GitHub repo in Vercel (framework: Next.js; no build settings needed).
-2. Add the environment variables above in *Project → Settings → Environment Variables* (`QLOO_API_KEY`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_MAX_CONCURRENCY=4`).
-3. Optional: add an Upstash Redis integration so the cache and rate limits are shared across instances.
-4. Deploy. The run endpoint streams for up to 300 s (`maxDuration`), well above a typical run.
+The hosted demo runs on Netlify's free plan. `netlify.toml` declares the Next.js runtime plugin; `netlify/functions/agent-run.mts` is the background function.
+
+1. Create a Netlify project from the GitHub repo (build command `npm run build`, publish `.next`; both are in `netlify.toml`).
+2. Set the environment variables in *Project configuration → Environment variables*: `QLOO_API_KEY`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_LABEL`, `LLM_MAX_CONCURRENCY`, plus `RUN_EXECUTION=background`, `CACHE_BACKEND=blobs` and a random `JOB_SECRET`. Variables set in `netlify.toml` do not reach functions, so set them in the UI.
+3. Deploy. Netlify Blobs needs no setup: it holds the deck cache, the job logs and the rate-limit counters.
+
+Any Node host works too: leave `RUN_EXECUTION=inline` and add Upstash Redis (`KV_REST_API_URL`, `KV_REST_API_TOKEN`) if you run more than one instance.
 
 ## Data handling
 
@@ -140,7 +153,7 @@ npm run probe     # API verification probe (needs QLOO_API_KEY); prints a summar
 - Fit scores are relative within one deck; they are not comparable across shows and are not revenue forecasts.
 - The plain-LLM baseline depends on the model used; a different model guesses different “obvious” brands.
 - Generated pitches are drafts. The grounding checker blocks invented cultural references, but hosts should still review tone and add their own product experience (the scripts leave a `[personal experience]` slot for that).
-- Without a shared KV, caches and rate limits are per server instance.
+- Without a shared store (Netlify Blobs or Upstash), caches, job logs and rate limits are per server instance.
 
 ## Project layout
 
@@ -150,7 +163,16 @@ src/lib/qloo/sample.ts   synthetic fixtures (fictional, clearly labelled)
 src/lib/agent/           run loop, tools, stages, baseline, writer
 src/lib/scoring.ts       deterministic fit scoring
 src/lib/grounding.ts     reference extraction + grounding check
-src/app/api/run          SSE stream of a run
+src/app/api/run          start or join a run; /api/run/events polls its job log
+src/lib/runs.ts          jobs: in-flight marker, job log, inline or background execution
+src/lib/cache.ts         memory, Upstash or Netlify Blobs store
+netlify/functions/       agent-run background function
 src/components/run/      trace, sponsor cards, comparison panel, snapshot, media kit
 scripts/probe.mjs        API verification probe
 ```
+
+## Design credits
+
+- Colours, type and spacing come from the `claude` style in [Open Design](https://github.com/nexu-io/open-design) (Apache-2.0): parchment and ivory surfaces, one terracotta accent, Georgia headings. Inspiration only; no third-party logos or wordmarks are used.
+- Reviewed against Vercel's [Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines) (MIT) and checked with the Impeccable design detector for contrast, nesting and layout problems.
+- Checked in a real browser with [Playwright CLI](https://github.com/microsoft/playwright-cli) at desktop and phone widths, in light and dark mode.
