@@ -60,16 +60,21 @@ export async function loadCandidates(ctx: RunContext, take = 50): Promise<BrandE
   return kept;
 }
 
-/** Default deep-dive selection: highest affinity, at most 2 per category. */
-export function defaultDeepDive(candidates: BrandEntity[], n = config.agent.deepDiveBrands): BrandEntity[] {
+/**
+ * Default deep-dive selection: highest affinity, at most 2 per category. With
+ * `chosen`, returns only the extra brands needed to reach `n` in total.
+ */
+export function defaultDeepDive(candidates: BrandEntity[], n = config.agent.deepDiveBrands, chosen: BrandEntity[] = []): BrandEntity[] {
   const perCat = new Map<string, number>();
+  const catOf = (b: BrandEntity) => (b.group ?? b.category ?? "other").toLowerCase();
+  for (const b of chosen) perCat.set(catOf(b), (perCat.get(catOf(b)) ?? 0) + 1);
   const out: BrandEntity[] = [];
   for (const b of candidates) {
-    if (out.length >= n) break;
-    const cat = (b.category ?? "other").toLowerCase();
-    const used = perCat.get(cat) ?? 0;
+    if (chosen.length + out.length >= n) break;
+    if (chosen.some((c) => c.id === b.id)) continue;
+    const used = perCat.get(catOf(b)) ?? 0;
     if (used >= 2) continue;
-    perCat.set(cat, used + 1);
+    perCat.set(catOf(b), used + 1);
     out.push(b);
   }
   return out;
@@ -88,7 +93,17 @@ export function matchCandidates(ctx: RunContext, refs: string[]): { found: Brand
   return { found, unknown };
 }
 
-export async function loadFanProfiles(ctx: RunContext, brands: BrandEntity[], domains: DomainKey[] = OVERLAP_DOMAINS, take = 40): Promise<void> {
+/** Listener favourites per domain that each brand's fans are scored against. */
+export const OVERLAP_ITEMS = 20;
+
+/**
+ * Brand-fan profiles: for each domain, Qloo's affinity of the brand's fans for
+ * the listeners' top favourites (filter.results.entities). Both sides are then
+ * scored on the same items, so the overlap is dense rather than two sparse top lists.
+ */
+export async function loadFanProfiles(ctx: RunContext, brands: BrandEntity[], domains: DomainKey[] = OVERLAP_DOMAINS): Promise<void> {
+  // The listeners' favourites are the yardstick, so they must exist first.
+  if (domains.some((d) => !ctx.state.profile.has(d))) await loadProfile(ctx);
   const jobs: { brand: BrandEntity; domain: DomainKey }[] = [];
   for (const b of brands) {
     const have = new Set((ctx.state.brandProfiles.get(b.id) ?? []).map((p) => p.domain));
@@ -97,7 +112,8 @@ export async function loadFanProfiles(ctx: RunContext, brands: BrandEntity[], do
   await mapLimit(jobs, QLOO_PARALLEL, async ({ brand, domain }) => {
     let entities: TasteEntity[] = [];
     try {
-      entities = await ctx.qloo.domainProfile(brand.id, domain, take);
+      const favourites = (ctx.state.profile.get(domain) ?? []).slice(0, OVERLAP_ITEMS).map((e) => e.id);
+      entities = await ctx.qloo.fanAffinity(brand.id, domain, favourites);
     } catch (err) {
       if ((err as Error).name === "BudgetExceededError") throw err;
     }
@@ -108,7 +124,8 @@ export async function loadFanProfiles(ctx: RunContext, brands: BrandEntity[], do
 }
 
 export function computeOverlaps(ctx: RunContext, brandIds?: string[]) {
-  const listener: DomainProfile[] = [...ctx.state.profile.entries()].map(([domain, entities]) => ({ domain, entities }));
+  // Compare on the same items the brand fans were scored on.
+  const listener: DomainProfile[] = [...ctx.state.profile.entries()].map(([domain, entities]) => ({ domain, entities: entities.slice(0, OVERLAP_ITEMS) }));
   const ids = brandIds?.length ? brandIds : [...ctx.state.brandProfiles.keys()];
   for (const id of ids) {
     const bp = ctx.state.brandProfiles.get(id);

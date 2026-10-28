@@ -279,6 +279,7 @@ function brandToEntity(b: SampleBrand): BrandEntity {
     type: "urn:entity:brand",
     popularity: b.popularity,
     category: b.category,
+    group: b.category,
     subtitle: b.category,
     tags: [{ id: `sample-tag-${b.category.toLowerCase().replace(/\W+/g, "-")}`, name: b.category, type: "urn:tag:category:brand" }],
     sample: true,
@@ -321,7 +322,16 @@ export function sampleInsights(opts: {
     });
   }
   const p = pool(opts.domain);
-  const ranked = rankBy(p, (x) => dot(sig, x.vec) + 0.1 * (x.e.popularity ?? 0) + 0.25 * noise(x.e.id), opts.take);
+  const scoreOf = (x: PoolEntity) => dot(sig, x.vec) + 0.1 * (x.e.popularity ?? 0) + 0.25 * noise(x.e.id);
+  if (opts.onlyIds) {
+    // Explicit lookups: affinity reflects where each item would rank in the whole pool.
+    const full = rankBy(p, scoreOf, p.length);
+    return full
+      .map(({ item }, i) => ({ item, overall: i + 1 }))
+      .filter(({ item }) => opts.onlyIds!.includes(item.e.id))
+      .map(({ item, overall }, i) => ({ ...item.e, rank: i + 1, affinity: affinityForRank(overall, p.length) }));
+  }
+  const ranked = rankBy(p, scoreOf, opts.take);
   return ranked.map(({ item }, i) => ({ ...item.e, rank: i + 1, affinity: affinityForRank(i + 1, ranked.length) }));
 }
 

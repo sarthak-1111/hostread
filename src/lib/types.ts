@@ -45,6 +45,8 @@ export interface PodcastEntity extends TasteEntity {
 
 export interface BrandEntity extends TasteEntity {
   category?: string;
+  /** Coarse grouping (Qloo brand subtype or genre) used to keep the shortlist varied. */
+  group?: string;
 }
 
 export interface DomainProfile {

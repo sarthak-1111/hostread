@@ -26,7 +26,7 @@ const STORY = [
   },
   {
     label: "With HostRead",
-    text: "She types her show's name. The agent maps what her listeners love across film, TV, music, dining and books, and finds a brand whose fans love the same things. The chatbot never mentioned it.",
+    text: "She types her show's name. The agent maps what her listeners love across film, TV, music, food and books, and finds a brand whose fans love the same things. The chatbot never mentioned it.",
   },
   {
     label: "What she sends",
@@ -35,7 +35,7 @@ const STORY = [
 ];
 
 const STEPS = [
-  { Icon: ScanSearch, t: "Resolve and profile the show", d: "Finds the show in the taste graph and maps what its listeners love across film, TV, music, dining, books, places and podcasts." },
+  { Icon: ScanSearch, t: "Resolve and profile the show", d: "Finds the show in the taste graph and maps what its listeners love across film, TV, music, food & drink, books, places and podcasts." },
   { Icon: Trophy, t: "Find candidate brands", d: "Ranks brands by affinity among your listeners, minus any categories you exclude for brand safety." },
   { Icon: Fingerprint, t: "Check the taste overlap", d: "Profiles each chosen brand's fans and measures how much their taste overlaps with your listeners'." },
   { Icon: ShieldCheck, t: "Score in code, write grounded", d: "Code computes the fit. The pitch and script may only cite entities the API returned, and code checks every one." },
@@ -58,7 +58,7 @@ export default function Home() {
               Find the sponsors your listeners <span className="title-highlight">already love.</span> Get the pitch written.
             </h1>
             <p className="mt-6 max-w-[54ch] text-lg leading-relaxed text-fg-2">
-              An agent reads your listeners&apos; taste in film, TV, music, dining and books with Qloo, then ranks the brands they love.
+              An agent reads your listeners&apos; taste in film, TV, music, food and books with Qloo, then ranks the brands they love.
             </p>
             <div className="mt-9 max-w-2xl">
               <LaunchPanel examples={examples} />

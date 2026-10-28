@@ -67,7 +67,7 @@ export const TOOL_SPECS: ToolSpec[] = [
     type: "function",
     function: {
       name: "brand_fan_profile",
-      description: `What each brand's fans love across film, tv, music, books and dining (Qloo affinity). Call for the brands you want to investigate (max ${config.agent.deepDiveBrands} per run). Use brand ids exactly as returned by brand_candidates.`,
+      description: `How much each brand's fans like the listeners' top favourites in film, tv, music, books and food & drink (Qloo affinity for the same items). Call for the brands you want to investigate (max ${config.agent.deepDiveBrands} per run). Use brand ids exactly as returned by brand_candidates.`,
       parameters: {
         type: "object",
         properties: { brand_ids: { type: "array", items: { type: "string" }, maxItems: 10 }, domains: { type: "array", items: { type: "string", enum: OVERLAP_DOMAINS } }, ...reasonProp },
@@ -202,9 +202,9 @@ async function toolCandidates(ctx: RunContext, take: number, thought?: string): 
   );
   return {
     content: JSON.stringify({
-      brands: kept.slice(0, 25).map((b) => ({ id: b.id, name: b.name, category: b.category ?? null, affinity: b.affinity !== undefined ? Number(b.affinity.toFixed(3)) : null })),
+      brands: kept.slice(0, 25).map((b) => ({ id: b.id, name: b.name, category: b.category ?? null, group: b.group ?? null, affinity: b.affinity !== undefined ? Number(b.affinity.toFixed(3)) : null })),
       filtered_out_by_safety: ctx.state.filteredOut.slice(0, 10),
-      next: `Pick up to ${config.agent.deepDiveBrands} varied brands for brand_fan_profile.`,
+      next: `Pick ${config.agent.deepDiveBrands} varied brands for brand_fan_profile, in one call.`,
     }),
   };
 }
@@ -224,7 +224,7 @@ async function toolFanProfile(ctx: RunContext, refs: string[], domains: DomainKe
       actor: "agent",
       tool: "brand_fan_profile",
       title: `Profile fans of ${fresh.map((b) => b.name).join(", ") || "selected brands"}`,
-      params: { brands: fresh.map((b) => b.name), domains, take: 40 },
+      params: { brands: fresh.map((b) => b.name), domains, "filter.results.entities": "listeners' top 20 per domain" },
       thought,
     },
     async () => {
@@ -244,7 +244,7 @@ async function toolFanProfile(ctx: RunContext, refs: string[], domains: DomainKe
 
 async function toolOverlap(ctx: RunContext, refs: string[] | undefined, thought?: string): Promise<ToolResult> {
   const ids = refs?.length ? matchCandidates(ctx, refs).found.map((b) => b.id) : undefined;
-  const res = await traced(ctx, { actor: "code", tool: "overlap_evidence", title: "Compute listener ↔ brand-fan taste overlap", params: { method: "weighted Jaccard, top-40 per domain" }, thought }, async () => {
+  const res = await traced(ctx, { actor: "code", tool: "overlap_evidence", title: "Compute listener ↔ brand-fan taste overlap", params: { method: "weighted Jaccard of Qloo affinities, listeners vs brand fans, same 20 items per domain" }, thought }, async () => {
     const r = computeOverlaps(ctx, ids);
     const shared = r.reduce((a, o) => a + (o?.shared.length ?? 0), 0);
     return { value: r, summary: `${r.length} brands compared, ${shared} shared favourites found`, counts: { brands: r.length, shared } };
@@ -279,10 +279,13 @@ async function toolGeography(ctx: RunContext, thought?: string): Promise<ToolRes
 }
 
 export async function toolRank(ctx: RunContext, actor: "agent" | "guardrail", thought?: string): Promise<ToolResult> {
-  // Make sure the inputs exist even if the agent skipped a step.
-  if (ctx.state.brandProfiles.size === 0) {
-    const picks = defaultDeepDive(ctx.state.candidates ?? []);
-    await traced(ctx, { actor: "guardrail", tool: "brand_fan_profile", title: `Profile fans of the top ${picks.length} candidates`, params: { brands: picks.map((b) => b.name) } }, async () => {
+  // Make sure the inputs exist even if the agent skipped a step or stopped short
+  // of a full shortlist.
+  const chosen = (ctx.state.candidates ?? []).filter((b) => ctx.state.brandProfiles.has(b.id));
+  const picks = defaultDeepDive(ctx.state.candidates ?? [], config.agent.deepDiveBrands, chosen);
+  if (picks.length) {
+    const title = chosen.length ? `Top up the shortlist with ${picks.length} more varied brands` : `Profile fans of the top ${picks.length} candidates`;
+    await traced(ctx, { actor: "guardrail", tool: "brand_fan_profile", title, params: { brands: picks.map((b) => b.name) } }, async () => {
       await loadFanProfiles(ctx, picks);
       return { value: null, summary: `${picks.length} brands × ${OVERLAP_DOMAINS.length} domains` };
     });

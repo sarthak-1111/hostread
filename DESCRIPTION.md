@@ -20,7 +20,7 @@ What both sides are missing is evidence about **taste**: not what a show is abou
 
 Dana types her show's name (with autocomplete) and watches HostRead's agent work:
 
-1. Maps the show's audience across **film, TV, music, dining, books, places and other podcasts** using Qloo's taste graph.
+1. Maps the show's audience across **film, TV, music, food & drink, books, places and other podcasts** using Qloo's taste graph.
 2. Pulls the **brands those listeners over-index on**, minus any categories the host excludes (alcohol, gambling, tobacco, cannabis, crypto, firearms, adult).
 3. Chooses which brands to investigate, profiles **each brand's fans** across the same domains, and measures how much the two taste profiles overlap.
 4. Scores every brand with a transparent, deterministic formula and returns a **ranked sponsor deck**. Each card shows the fit score, the evidence ("Listeners and this brand's fans both love: _a film_, _an artist_, _a restaurant_"), and buttons to copy a **pitch email** and a **45–60 second host-read ad script**.
@@ -33,7 +33,7 @@ The whole run streams live: you watch the agent choose tools, see each call's pa
 
 ## Why it needs Qloo
 
-The hackathon's rule is "if your submission would work the same without Qloo, you're building the wrong thing." HostRead makes that test visible in the product. A plain LLM only knows a show's topic, so it suggests the category defaults. HostRead's picks come from Qloo's cross-domain affinity data — which brands this audience actually over-indexes on, and which of those brands have fans with the same taste in film, TV, music, books and dining. The Obvious vs. Surprising panel puts the two side by side on every run and resolves the LLM's guesses back into Qloo to show how they score with this audience.
+The hackathon's rule is "if your submission would work the same without Qloo, you're building the wrong thing." HostRead makes that test visible in the product. A plain LLM only knows a show's topic, so it suggests the category defaults. HostRead's picks come from Qloo's cross-domain affinity data — which brands this audience actually over-indexes on, and which of those brands have fans with the same taste in film, TV, music, books and food & drink. The Obvious vs. Surprising panel puts the two side by side on every run and resolves the LLM's guesses back into Qloo to show how they score with this audience.
 
 Qloo powers every number and every reference on the page:
 
@@ -51,7 +51,7 @@ HostRead is an agentic tool: an LLM in a tool-calling loop (any OpenAI-compatibl
 
 What the LLM is **not** allowed to do is just as important:
 
-- **Scores are code.** Fit = 100 × (0.50·A + 0.35·O + 0.15·S), where A is Qloo's brand affinity for the audience (normalised across candidates), O is the weighted Jaccard overlap between listeners' and brand fans' top-40 entities per domain, and S is 1 when the plain-LLM baseline missed the brand. The formula is on the page under "How we score". Scores are relative rankings, not revenue predictions, and the UI says so.
+- **Scores are code.** Fit = 100 × (0.50·A + 0.35·O + 0.15·S), where A is Qloo's brand affinity for the audience (normalised across candidates), O is a weighted Jaccard over the listeners' top 20 favourites per domain, comparing the listeners' Qloo affinity for each item with the brand fans' affinity for the same item, and S is 1 when the plain-LLM baseline missed the brand. The formula is on the page under "How we score". Scores are relative rankings, not revenue predictions, and the UI says so.
 - **Generated text is grounded.** The pitch email and ad script may only cite entities the API returned in this run. Code extracts every proper-noun reference, rejects anything else, and makes the model rewrite; if it keeps inventing, a deterministic template takes over. The card shows how many grounded references were used and whether a rewrite was needed.
 - **Guardrails.** Maximum steps, a per-run API-call budget, a run time budget, timeouts, retries with backoff, at most four concurrent Qloo requests, and validated tool arguments. If the LLM stops early or is unavailable, the guardrails finish the plan with the same tools, and the trace says so.
 

@@ -17,8 +17,8 @@ export function HowWeScore({ compact = false }: { compact?: boolean }) {
         <div>
           <dt className="font-semibold text-fg">O, taste overlap</dt>
           <dd className="mt-1.5 max-w-[62ch] leading-relaxed text-fg-2">
-            Weighted Jaccard between the listeners&apos; and the brand fans&apos; top 40 entities in film, TV, music, books and dining, averaged across domains and scaled so the
-            best overlap in the deck is 1.
+            For the listeners&apos; top 20 favourites in film, TV, music, books and food &amp; drink, Qloo scores how much the brand&apos;s fans like each one. A weighted
+            Jaccard compares the two sets of affinities, averaged across domains and min-max normalised within the deck.
           </dd>
         </div>
         <div>

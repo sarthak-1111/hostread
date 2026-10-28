@@ -64,7 +64,7 @@ Fallbacks: if the network is slow, open the cached share link (instant). If the 
    The API is the input, not the product. Our moat is the workflow and the loop: evidence-backed decks, grounded pitches, and — as campaigns run — outcome data on which pitches got replies and which reads converted. That feedback improves ranking in a way a raw API call can't, and the two-sided marketplace compounds it.
 
 4. **"Why do you need Qloo? Isn't this just ChatGPT?"**
-   We show the difference on every run. A plain LLM only knows the show's topic, so it suggests the category defaults. Qloo knows what the audience does across film, TV, music, dining, books and places, and which brands' fans share those tastes. Without Qloo we have no candidates, no evidence, no score and nothing we're allowed to cite.
+   We show the difference on every run. A plain LLM only knows the show's topic, so it suggests the category defaults. Qloo knows what the audience does across film, TV, music, food & drink, books and places, and which brands' fans share those tastes. Without Qloo we have no candidates, no evidence, no score and nothing we're allowed to cite.
 
 5. **"How do you know the fit score means anything?"**
    It's transparent: half audience affinity from Qloo, about a third taste overlap between listeners and brand fans, and a small bonus for non-obvious picks. We're explicit that it's a relative ranking, not a revenue forecast. The next step is calibrating it against real campaign outcomes.

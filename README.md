@@ -2,7 +2,7 @@
 
 **Find the sponsors your listeners already love. Get the pitch written.**
 
-HostRead is an agentic tool for independent podcasters and small networks without an ad-sales team. Type a show's name; an LLM agent uses the [Qloo](https://www.qloo.com) taste graph to map what that show's listeners love across film, TV, music, dining, books and places, finds the brands those listeners over-index on, checks how much each brand's fans share the same tastes, and returns a ranked **sponsor deck** — with the evidence, a pitch email and a 45–60 second host-read ad script for each brand.
+HostRead is an agentic tool for independent podcasters and small networks without an ad-sales team. Type a show's name; an LLM agent uses the [Qloo](https://www.qloo.com) taste graph to map what that show's listeners love across film, TV, music, food & drink, books and places, finds the brands those listeners over-index on, checks how much each brand's fans share the same tastes, and returns a ranked **sponsor deck** — with the evidence, a pitch email and a 45–60 second host-read ad script for each brand.
 
 - **Live demo:** https://hostread.vercel.app (synthetic sample data until the Qloo API key is connected)
 - **Built for:** the [Qloo Agentic Hackathon](https://qloo.devpost.com) (Oct 2026)
@@ -33,14 +33,14 @@ All calls go to `https://hackathon.api.qloo.com` from server-side code, with the
 |---|---|
 | `GET /search?types=urn:entity:podcast` | Autocomplete on the landing page; resolving a typed show name to a Qloo entity (the agent's `resolve_podcast` tool). |
 | `GET /v2/insights?filter.type=urn:entity:brand&signal.interests.entities=<show>` | **Candidate sponsors** ranked by affinity among the show's listeners → the **A** term of the fit score (`brand_candidates`). |
-| `GET /v2/insights?filter.type=urn:entity:{movie,tv_show,artist,book,place,destination,podcast}&signal.interests.entities=<show>` | The **audience taste profile** across domains (`audience_profile`) — the media kit, and one side of the overlap. Dining uses `urn:entity:place` with a restaurant tag. |
-| `GET /v2/insights?filter.type=…&signal.interests.entities=<brand>` | Each candidate brand's **fan taste profile** (`brand_fan_profile`) — the other side of the overlap → the **O** term and the evidence chips. |
+| `GET /v2/insights?filter.type=urn:entity:{movie,tv_show,artist,book,destination,podcast}&signal.interests.entities=<show>` | The **audience taste profile** across domains (`audience_profile`) — the media kit, and the listeners' side of the overlap. Food & drink uses `urn:entity:brand` with `filter.tags=urn:tag:genre:brand:food_and_beverage` (place results cluster around one city; see [API_NOTES.md](API_NOTES.md)). |
+| `GET /v2/insights?filter.type=…&signal.interests.entities=<brand>&filter.results.entities=<listeners' top 20>` | How much each candidate brand's **fans** like the listeners' favourites (`brand_fan_profile`) — the other side of the overlap → the **O** term and the evidence chips. |
 | `GET /v2/insights?filter.type=urn:entity:brand&filter.results.entities=<ids>` | How the plain LLM's guessed brands actually score with this audience (Obvious vs. Surprising). |
 | `GET /search?types=urn:entity:brand` | Resolving the plain LLM's brand names to Qloo entities. |
 | `GET /v2/insights?filter.type=urn:demographics` | Age and gender skew of the audience (`demographics`). |
-| `GET /v2/insights?filter.type=urn:heatmap` | Where the audience over-indexes (`geography`), when available. |
+| `GET /v2/insights?filter.type=urn:heatmap&filter.location.query=United States&output.heatmap.boundary=urn:geohash` | Where the audience over-indexes (`geography`): geohash cells grouped into US metros in code. |
 
-Qloo data is cached at runtime (memory, optional Redis-compatible KV). Nothing from the API is committed to this repository.
+Qloo data is cached at runtime (memory, optional Redis-compatible KV, and finished decks in a private Vercel Blob store). Nothing from the API is committed to this repository. What we verified about coverage, limits and parameters is in [API_NOTES.md](API_NOTES.md).
 
 ## How the agent works
 
@@ -56,7 +56,7 @@ flowchart LR
   T --> C[TasteClient<br/>single data-access module]
   C -->|X-Api-Key| Q[(Qloo<br/>hackathon API)]
   C -.SAMPLE mode.-> F[(Synthetic fixtures)]
-  T --> S[Deterministic scoring<br/>weighted Jaccard + affinity + surprise]
+  T --> S[Deterministic scoring<br/>affinity + weighted Jaccard + surprise]
   RM --> B[Plain-LLM baseline<br/>name + topic only]
   RM --> W[Pitch writer<br/>grounding check + regenerate<br/>template fallback]
   B --> S
@@ -82,7 +82,7 @@ Fit = 100 × (0.50·A + 0.35·O + 0.15·S)
 ```
 
 - **A — audience affinity:** Qloo's affinity of the brand among the show's listeners, min–max normalised across the candidate pool.
-- **O — taste overlap:** weighted Jaccard between the listeners' and the brand fans' top 40 entities in film, TV, music, books and dining. Weights are linear rank weights (1 for #1 → 1/40 for #40): `Σ min(wL, wB) / Σ max(wL, wB)`, averaged across domains and scaled so the best overlap in the deck = 1.
+- **O — taste overlap:** for the listeners' top 20 favourites in each of film, TV, music, books and food & drink, Qloo returns the listeners' affinity (wL) and, with the brand as the signal and `filter.results.entities`, the brand fans' affinity for the same items (wB). The weighted Jaccard `Σ min(wL, wB) / Σ max(wL, wB)` is averaged across domains and min–max normalised within the deck. An item counts as evidence when wB ≥ 0.75; the headline chips favour film, TV and music and the items this brand's fans like more than the deck's other brands do.
 - **S — surprise:** 1 if the plain-LLM baseline did not name the brand (fuzzy name match + entity match), else 0. If the baseline is unavailable, S = 0 for everyone.
 
 A fit score is a **relative ranking within one show's deck**, not a prediction of revenue, CPM or conversion. The UI says so wherever scores appear.

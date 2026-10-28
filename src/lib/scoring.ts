@@ -4,9 +4,10 @@
 //
 //   A  audience affinity  — Qloo's affinity of the brand for this show's
 //                           listeners, min-max normalised across the candidate pool
-//   O  taste overlap      — mean weighted Jaccard between the listeners' and the
-//                           brand fans' top entities per domain, normalised so the
-//                           best-overlapping brand in the deck = 1
+//   O  taste overlap      — mean weighted Jaccard per domain over the listeners'
+//                           top favourites, comparing the listeners' Qloo affinity
+//                           for each item with the brand fans' affinity for it;
+//                           min-max normalised within the deck
 //   S  surprise           — 1 if the plain-LLM baseline did not name the brand
 //
 // Fit is a relative ranking within one show's deck, not a revenue prediction.
@@ -16,17 +17,22 @@ export const WEIGHTS = { affinity: 0.5, overlap: 0.35, surprise: 0.15 } as const
 
 export const FORMULA_TEXT = "Fit = 100 × (0.50·A + 0.35·O + 0.15·S)";
 
+/** A favourite counts as evidence when the brand's fans score it at least this high. */
+export const EVIDENCE_MIN_WEIGHT = 0.75;
+
 /** Linear rank weight: 1 for #1, ~1/N for #N. */
 export function rankWeight(rank: number, total: number): number {
   if (total <= 0) return 0;
   return Math.max(0, (total - rank + 1) / total);
 }
 
+/** Qloo affinity when present, else a rank weight. */
 function weights(entities: TasteEntity[]): Map<string, { w: number; e: TasteEntity }> {
   const m = new Map<string, { w: number; e: TasteEntity }>();
   entities.forEach((e, i) => {
     const rank = e.rank ?? i + 1;
-    if (!m.has(e.id)) m.set(e.id, { w: rankWeight(rank, entities.length), e });
+    const w = typeof e.affinity === "number" ? e.affinity : rankWeight(rank, entities.length);
+    if (!m.has(e.id)) m.set(e.id, { w, e });
   });
   return m;
 }
@@ -61,16 +67,27 @@ export function computeOverlap(brandId: string, listenerProfile: DomainProfile[]
     perDomain[bp.domain] = round(score, 4);
     sum += score;
     n++;
-    for (const x of s) shared.push({ domain: bp.domain, entity: x.e, listenerWeight: round(x.wl, 3), brandWeight: round(x.wb, 3) });
+    for (const x of s) if (x.wb >= EVIDENCE_MIN_WEIGHT) shared.push({ domain: bp.domain, entity: x.e, listenerWeight: round(x.wl, 3), brandWeight: round(x.wb, 3) });
   }
   shared.sort((a, b) => b.listenerWeight * b.brandWeight - a.listenerWeight * a.brandWeight);
   return { brandId, perDomain, raw: n ? round(sum / n, 4) : 0, shared };
 }
 
-/** Pick up to `k` evidence items, preferring one per domain. */
-export function pickTopEvidence(shared: SharedEntity[], k = 3): SharedEntity[] {
+/**
+ * Pick up to `k` evidence items, preferring one per domain and taking the
+ * `prefer` domains first (in order) when they have evidence.
+ */
+export function pickTopEvidence(shared: SharedEntity[], k = 3, prefer: DomainKey[] = []): SharedEntity[] {
   const out: SharedEntity[] = [];
   const used = new Set<DomainKey>();
+  for (const d of prefer) {
+    if (out.length >= k) break;
+    const s = shared.find((x) => x.domain === d);
+    if (s) {
+      out.push(s);
+      used.add(d);
+    }
+  }
   for (const s of shared) {
     if (out.length >= k) break;
     if (!used.has(s.domain)) {
@@ -118,13 +135,27 @@ export interface ScoreInput {
 
 export function scoreDeck({ pool, overlaps, namedByBaseline }: ScoreInput): SponsorCard[] {
   const A = normaliseAffinity(pool);
-  const maxRaw = Math.max(0, ...overlaps.map((o) => o.raw));
+  const raws = overlaps.map((o) => o.raw);
+  const minRaw = Math.min(...raws);
+  const maxRaw = Math.max(...raws);
+  // A favourite every brand's fans love says little about any one brand, so the
+  // headline chips prefer items this brand's fans like more than the deck average.
+  const fanSum = new Map<string, { sum: number; n: number }>();
+  for (const o of overlaps)
+    for (const s of o.shared) {
+      const t = fanSum.get(s.entity.id) ?? { sum: 0, n: 0 };
+      fanSum.set(s.entity.id, { sum: t.sum + s.brandWeight, n: t.n + 1 });
+    }
+  const lift = (s: SharedEntity) => {
+    const t = fanSum.get(s.entity.id);
+    return s.brandWeight - (t ? t.sum / overlaps.length : 0);
+  };
   const cards: SponsorCard[] = [];
   for (const o of overlaps) {
     const brand = pool.find((b) => b.id === o.brandId);
     if (!brand) continue;
     const a = A.get(brand.id)?.a ?? 0;
-    const ov = maxRaw > 0 ? o.raw / maxRaw : 0;
+    const ov = maxRaw > minRaw ? (o.raw - minRaw) / (maxRaw - minRaw) : maxRaw > 0 ? 1 : 0;
     const surprise = namedByBaseline(brand) ? 0 : 1;
     const score: ScoreBreakdown = {
       affinity: round(a),
@@ -141,7 +172,12 @@ export function scoreDeck({ pool, overlaps, namedByBaseline }: ScoreInput): Spon
       score,
       surpriseFit: surprise === 1,
       evidence: o.shared.slice(0, 24),
-      topEvidence: pickTopEvidence(o.shared, 3),
+      // Headline chips lead with pop culture (film, TV, music), the most relatable in a pitch.
+      topEvidence: pickTopEvidence(
+        [...o.shared].sort((x, y) => lift(y) - lift(x) || y.listenerWeight * y.brandWeight - x.listenerWeight * x.brandWeight),
+        3,
+        ["film", "tv", "music"],
+      ),
       perDomain: o.perDomain,
     });
   }

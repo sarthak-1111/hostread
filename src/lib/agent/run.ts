@@ -28,7 +28,7 @@ function systemPrompt(exclude: SafetyCategory[]): string {
     "Plan:",
     "1. audience_profile: what listeners love across film, tv, music, dining, books, travel and podcasts.",
     "2. brand_candidates: brands ranked by affinity among this show's listeners" + (exclude.length ? ` (excluded for brand safety: ${exclude.join(", ")})` : "") + ".",
-    `3. Choose up to ${config.agent.deepDiveBrands} brands for brand_fan_profile. Favour high affinity but pick a varied set: at most 2 per category, skip near-duplicates or sub-brands of the same company, and skip brands that are implausible podcast sponsors (no consumer product, government or utilities).`,
+    `3. Choose ${config.agent.deepDiveBrands} brands for brand_fan_profile in one call. Favour high affinity but pick a varied set: at most 2 per group, skip near-duplicates or sub-brands of the same company, and skip brands that are implausible podcast sponsors (no consumer product, government or utilities).`,
     "4. overlap_evidence for the brands you profiled.",
     "5. demographics and geography for the media kit.",
     "6. rank_sponsors: deterministic scoring code. Never compute or adjust scores yourself.",

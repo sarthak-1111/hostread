@@ -14,7 +14,7 @@ import type { BrandEntity, Demographics, DomainKey, GeoPoint, PodcastEntity, Tag
 import * as sample from "./sample";
 
 /** Bump when normalisers change so stale cache entries are ignored. */
-const NORM_VERSION = "n2";
+const NORM_VERSION = "n3";
 
 const qlooGate = new Semaphore(config.qloo.maxConcurrency);
 
@@ -113,9 +113,16 @@ function brandCategory(e: TasteEntity, props: any): string | undefined {
   return (subtype ?? genre)?.name;
 }
 
+/** Coarse group for shortlist variety: industries are too fine-grained ("Home Goods" vs "Home furnishing"). */
+function brandGroup(e: TasteEntity): string | undefined {
+  const subtype = e.tags?.find((x) => /brand_subtype/.test(x.type ?? "") && x.name !== "Other");
+  const genre = e.tags?.find((x) => /genre:brand/.test(x.type ?? ""));
+  return (subtype ?? genre)?.name;
+}
+
 function toBrand(e: TasteEntity, props?: any): BrandEntity {
   const category = brandCategory(e, props);
-  return { ...e, category, subtitle: e.subtitle ?? category };
+  return { ...e, category, group: brandGroup(e) ?? category, subtitle: e.subtitle ?? category };
 }
 
 function toPodcast(e: TasteEntity): PodcastEntity {
@@ -268,6 +275,19 @@ export class TasteClient {
     return this.get("/v2/insights", params, (json) =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       insightsEntities(json).map((e: any, i: number) => normEntity(e, i + 1)),
+    );
+  }
+
+  /** How strongly the fans of `signalId` (a brand) like specific items in one domain. */
+  async fanAffinity(signalId: string, domain: DomainKey, itemIds: string[]): Promise<TasteEntity[]> {
+    const ids = itemIds.slice(0, 50);
+    if (ids.length === 0) return [];
+    if (this.mode === "sample") return this.simulate(() => sample.sampleInsights({ domain, signalId, take: ids.length, onlyIds: ids }));
+    return this.get(
+      "/v2/insights",
+      { "filter.type": DOMAINS[domain].qlooType, "signal.interests.entities": signalId, "filter.results.entities": ids.join(","), take: ids.length },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (json) => insightsEntities(json).map((e: any, i: number) => normEntity(e, i + 1)),
     );
   }
 

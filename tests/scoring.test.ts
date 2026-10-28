@@ -27,20 +27,28 @@ describe("rankWeight", () => {
   });
 });
 
+const aff = (id: string, affinity: number): TasteEntity => ({ id, name: id.toUpperCase(), type: "urn:entity:movie", affinity });
+
 describe("computeOverlap + pickTopEvidence", () => {
+  // The listeners' favourites, and the brand fans' Qloo affinity for those same items.
   const listeners: DomainProfile[] = [
-    { domain: "film", entities: [ent("f1", 1), ent("f2", 2), ent("f3", 3)] },
-    { domain: "music", entities: [ent("m1", 1), ent("m2", 2)] },
+    { domain: "film", entities: [aff("f1", 0.95), aff("f2", 0.9), aff("f3", 0.85)] },
+    { domain: "music", entities: [aff("m1", 0.95), aff("m2", 0.9)] },
   ];
   const fans: DomainProfile[] = [
-    { domain: "film", entities: [ent("f2", 1), ent("f1", 2), ent("f9", 3)] },
-    { domain: "music", entities: [ent("m2", 1), ent("m7", 2)] },
+    { domain: "film", entities: [aff("f1", 0.9), aff("f2", 0.6), aff("f3", 0.8)] },
+    { domain: "music", entities: [aff("m1", 0.7), aff("m2", 0.85)] },
   ];
-  it("averages per-domain overlap and lists shared entities", () => {
+  it("compares affinities on the same items and keeps well-liked items as evidence", () => {
     const o = computeOverlap("b1", listeners, fans);
     expect(Object.keys(o.perDomain).sort()).toEqual(["film", "music"]);
-    expect(o.raw).toBeGreaterThan(0);
-    expect(o.shared.map((s) => s.entity.id)).toContain("f1");
+    // film: Σ min / Σ max = (0.9 + 0.6 + 0.8) / (0.95 + 0.9 + 0.85)
+    expect(o.perDomain.film).toBeCloseTo(2.3 / 2.7, 3);
+    expect(o.shared.map((s) => s.entity.id).sort()).toEqual(["f1", "f3", "m2"]);
+  });
+  it("scores fans who like the listeners' favourites less lower", () => {
+    const cooler: DomainProfile[] = [{ domain: "film", entities: [aff("f1", 0.6), aff("f2", 0.55), aff("f3", 0.5)] }];
+    expect(computeOverlap("b2", listeners, cooler).raw).toBeLessThan(computeOverlap("b1", listeners, fans).perDomain.film!);
   });
   it("prefers evidence from different domains", () => {
     const o = computeOverlap("b1", listeners, fans);
@@ -68,23 +76,26 @@ describe("scoreDeck", () => {
     const pool: BrandEntity[] = [
       { id: "a", name: "Alpha", type: "urn:entity:brand", affinity: 0.9 },
       { id: "b", name: "Beta", type: "urn:entity:brand", affinity: 0.7 },
+      { id: "c", name: "Gamma", type: "urn:entity:brand", affinity: 0.8 },
     ];
     const deck = scoreDeck({
       pool,
       overlaps: [
-        { brandId: "a", perDomain: { film: 0.1 }, raw: 0.1, shared: [] },
+        { brandId: "a", perDomain: { film: 0.15 }, raw: 0.15, shared: [] },
         { brandId: "b", perDomain: { film: 0.2 }, raw: 0.2, shared: [] },
+        { brandId: "c", perDomain: { film: 0.1 }, raw: 0.1, shared: [] },
       ],
       namedByBaseline: (b) => b.name === "Alpha",
     });
-    const alpha = deck.find((c) => c.brand.id === "a")!;
-    const beta = deck.find((c) => c.brand.id === "b")!;
-    // Alpha: A=1, O=0.5, S=0 -> 50 + 17.5 = 67.5 -> 68
-    expect(alpha.fit).toBe(68);
+    const fit = (id: string) => deck.find((c) => c.brand.id === id)!.fit;
+    // Alpha: A=1, O=0.5 (min-max), S=0 -> 50 + 17.5 = 67.5 -> 68
+    expect(fit("a")).toBe(68);
     // Beta: A=0, O=1, S=1 -> 35 + 15 = 50
-    expect(beta.fit).toBe(50);
-    expect(beta.surpriseFit).toBe(true);
-    expect(deck[0].brand.id).toBe("a");
-    expect(deck.map((c) => c.rank)).toEqual([1, 2]);
+    expect(fit("b")).toBe(50);
+    // Gamma: A=0.5, O=0, S=1 -> 25 + 15 = 40
+    expect(fit("c")).toBe(40);
+    expect(deck.find((c) => c.brand.id === "b")!.surpriseFit).toBe(true);
+    expect(deck.map((c) => c.brand.id)).toEqual(["a", "b", "c"]);
+    expect(deck.map((c) => c.rank)).toEqual([1, 2, 3]);
   });
 });
