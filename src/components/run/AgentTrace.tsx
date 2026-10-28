@@ -5,10 +5,10 @@ import { Bot, ChevronDown, CircleCheck, CircleX, Code, Database, LoaderCircle, S
 import type { TraceStep } from "@/lib/types";
 
 const ACTOR: Record<TraceStep["actor"], { label: string; cls: string; Icon: typeof Bot }> = {
-  agent: { label: "tool", cls: "bg-bg text-fg-2 shadow-[0_0_0_1px_var(--border-soft)]", Icon: Database },
-  llm: { label: "LLM", cls: "bg-bg text-fg-2 shadow-[0_0_0_1px_var(--border-soft)]", Icon: Bot },
-  code: { label: "code", cls: "bg-bg text-fg-2 shadow-[0_0_0_1px_var(--border-soft)]", Icon: Code },
-  guardrail: { label: "guardrail", cls: "bg-warn-wash text-warn-ink", Icon: ShieldAlert },
+  agent: { label: "tool", cls: "", Icon: Database },
+  llm: { label: "LLM", cls: "", Icon: Bot },
+  code: { label: "code", cls: "", Icon: Code },
+  guardrail: { label: "guardrail", cls: "tag-warn", Icon: ShieldAlert },
 };
 
 function fmtMs(ms?: number) {
@@ -45,7 +45,7 @@ export function AgentTrace({ steps, running, cached, stats }: { steps: TraceStep
   const apiCalls = stats?.apiCalls ?? steps.reduce((a, s) => a + (s.apiCalls ?? 0), 0);
 
   return (
-    <section aria-label="Agent trace" className="rounded-lg bg-surface shadow-[0_0_0_1px_var(--border-soft)]">
+    <section aria-label="Agent trace" className="frame">
       <button
         type="button"
         onClick={() => setOpenMobile((o) => !o)}
@@ -60,15 +60,15 @@ export function AgentTrace({ steps, running, cached, stats }: { steps: TraceStep
             <CircleCheck className="size-4 shrink-0 text-success-text" aria-hidden="true" />
           )}
           <div className="min-w-0">
-            <div className="whitespace-nowrap font-display text-[19px] leading-tight">Agent trace</div>
+            <div className="whitespace-nowrap font-display text-[17px] leading-tight">Agent trace</div>
             <div className="truncate text-label text-muted lg:hidden" aria-live="polite">
               {running ? (current?.title ?? "Starting…") : `${steps.length} steps`}
             </div>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2 text-label text-muted">
-          <span className="tabular">{apiCalls} API calls</span>
-          {cached && <span className="rounded-full bg-success-wash px-2 py-0.5 font-medium text-success-text">Cached</span>}
+          <span className="font-mono tabular">{apiCalls} API calls</span>
+          {cached && <span className="tag tag-success">Cached</span>}
           <ChevronDown className={`size-4 transition-transform duration-150 lg:hidden ${openMobile ? "rotate-180" : ""}`} aria-hidden="true" />
         </div>
       </button>
@@ -82,7 +82,7 @@ export function AgentTrace({ steps, running, cached, stats }: { steps: TraceStep
           {steps.map((s) => {
             const A = ACTOR[s.actor];
             return (
-              <li key={s.id} className="rise rounded-sm px-2 py-2.5 transition-colors duration-150 hover:bg-bg">
+              <li key={s.id} className="rise px-2 py-2.5 transition-colors duration-150 hover:bg-bg">
                 <div className="flex items-start gap-2.5">
                   <span className="mt-0.5 shrink-0">
                     {s.status === "running" ? (
@@ -98,10 +98,10 @@ export function AgentTrace({ steps, running, cached, stats }: { steps: TraceStep
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
                       <div className="text-[14px] font-medium leading-snug">{s.title}</div>
-                      <div className="shrink-0 text-label text-muted tabular">{fmtMs(s.ms)}</div>
+                      <div className="shrink-0 font-mono text-label text-muted tabular">{fmtMs(s.ms)}</div>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className={`inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-label font-medium ${A.cls}`}>
+                      <span className={`tag ${A.cls}`}>
                         <A.Icon className="size-3" strokeWidth={1.75} aria-hidden="true" />
                         {A.label}
                       </span>
@@ -115,7 +115,7 @@ export function AgentTrace({ steps, running, cached, stats }: { steps: TraceStep
                       ) : null}
                       {s.cached ? <span className="text-label text-success-text">from cache</span> : null}
                     </div>
-                    {s.thought && <p className="mt-1.5 text-[13px] italic leading-snug text-fg-2">“{s.thought}”</p>}
+                    {s.thought && <p className="mt-1.5 text-[13px] leading-snug text-fg-2">“{s.thought}”</p>}
                     {s.params && Object.keys(s.params).length > 0 && (
                       <p className="mt-1 break-words font-mono text-label leading-snug text-muted">{fmtParams(s.params)}</p>
                     )}
@@ -127,7 +127,7 @@ export function AgentTrace({ steps, running, cached, stats }: { steps: TraceStep
           })}
         </ol>
         {stats && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border-soft px-4 py-3 text-label text-muted tabular">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border-soft bg-bg px-4 py-3 font-mono text-label text-muted tabular">
             <span>{stats.apiCalls} Qloo calls</span>
             <span>{stats.llmCalls} LLM calls</span>
             <span>{fmtMs(stats.ms)} total</span>

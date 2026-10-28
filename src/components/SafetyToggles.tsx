@@ -9,8 +9,8 @@ export function SafetyToggles({ value, onChange, compact = false }: { value: Saf
   return (
     <fieldset className="flex flex-wrap items-center gap-1.5">
       <legend className="sr-only">Brand-safety exclusions</legend>
-      <span className={`mr-1 inline-flex items-center gap-1.5 text-fg-2 ${compact ? "text-label" : "text-[13px]"}`}>
-        <ShieldCheck className="size-4 text-muted" strokeWidth={1.75} aria-hidden="true" /> Exclude
+      <span className="eyebrow mr-1.5 inline-flex items-center gap-1.5">
+        <ShieldCheck className="size-3.5" strokeWidth={2} aria-hidden="true" /> Exclude
       </span>
       {SAFETY_CATEGORIES.map((c) => {
         const on = value.includes(c.key);
@@ -21,11 +21,11 @@ export function SafetyToggles({ value, onChange, compact = false }: { value: Saf
             title={c.hint}
             aria-pressed={on}
             onClick={() => toggle(c.key)}
-            className={`inline-flex min-h-7 items-center gap-1 rounded-full px-3 py-1 transition-colors duration-150 ${compact ? "text-label" : "text-[13px]"} ${
-              on ? "bg-fg text-bg" : "bg-surface text-fg-2 shadow-[0_0_0_1px_var(--ring-warm)] hover:text-fg hover:shadow-[0_0_0_1px_var(--meta)]"
+            className={`inline-flex min-h-9 items-center gap-1 border px-2.5 py-1 transition-colors duration-150 ${compact ? "text-label" : "text-[13px]"} ${
+              on ? "border-fg bg-fg text-bg" : "border-border-soft bg-surface text-fg-2 hover:border-fg hover:text-fg"
             }`}
           >
-            {on && <X className="size-3" strokeWidth={2} aria-hidden="true" />}
+            {on && <X className="size-3" strokeWidth={2.25} aria-hidden="true" />}
             {c.label}
           </button>
         );

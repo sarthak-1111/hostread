@@ -33,18 +33,18 @@ export function LaunchPanel({ examples }: { examples: LaunchExample[] }) {
       </div>
       {examples.length > 0 && (
         <div className="mt-8">
-          <p className="mb-3 text-sm text-muted">Or open an example deck</p>
+          <p className="eyebrow mb-3">Or open an example deck</p>
           <div className="flex flex-wrap gap-2">
             {examples.map((ex) => (
               <button
                 key={ex.name}
                 type="button"
                 onClick={() => go(ex)}
-                className="group inline-flex min-h-9 items-center gap-2 rounded-full bg-surface py-1.5 pl-3.5 pr-2.5 text-[14px] shadow-[0_0_0_1px_var(--ring-warm)] transition-shadow duration-150 hover:shadow-[0_0_0_1px_var(--meta)]"
+                className="group inline-flex min-h-10 items-center gap-2 border border-border-soft bg-surface py-1.5 pl-3 pr-2.5 text-[14px] transition-[border-color,box-shadow] duration-150 hover:border-fg hover:shadow-soft"
               >
                 <span className="font-medium">{ex.name}</span>
                 <span className="text-label text-muted">{ex.genre}</span>
-                <ArrowUpRight className="size-3.5 text-muted transition-colors duration-150 group-hover:text-fg" aria-hidden="true" />
+                <ArrowUpRight className="size-3.5 text-muted transition-colors duration-150 group-hover:text-accent-text" aria-hidden="true" />
               </button>
             ))}
           </div>

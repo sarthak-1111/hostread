@@ -6,20 +6,19 @@ import { DOMAIN_META, EntityImage, EvidenceChip } from "../domain";
 import { CopyButton } from "./CopyButton";
 import type { DomainKey, PitchPack, SponsorCard } from "@/lib/types";
 
-/** Fit score: a single-hue radial meter; the track is a lighter step of the same hue. */
-function ScoreRing({ value }: { value: number }) {
-  const r = 24;
-  const c = 2 * Math.PI * r;
+/** Fit score: the number plus a single-hue meter on a lighter track of the same hue. */
+function FitScore({ value }: { value: number }) {
   const v = Math.max(0, Math.min(100, value));
   return (
-    <div className="relative grid size-16 shrink-0 place-items-center" role="img" aria-label={`Fit ${v} out of 100, a relative ranking within this deck`}>
-      <svg viewBox="0 0 60 60" className="absolute inset-0 -rotate-90" aria-hidden="true">
-        <circle cx="30" cy="30" r={r} fill="none" strokeWidth="4" className="stroke-accent-track" />
-        <circle cx="30" cy="30" r={r} fill="none" strokeWidth="4" strokeLinecap="round" className="stroke-accent" strokeDasharray={c} strokeDashoffset={c * (1 - v / 100)} />
-      </svg>
-      <div className="text-center leading-none" aria-hidden="true">
-        <div className={`${v >= 100 ? "text-base" : "text-xl"} font-semibold tabular`}>{v}</div>
-        <div className="mt-1 text-label text-muted">fit</div>
+    <div className="w-[84px] shrink-0 border border-border-soft bg-bg px-2.5 pb-2.5 pt-2" role="img" aria-label={`Fit ${v} out of 100, a relative ranking within this deck`}>
+      <div className="eyebrow" aria-hidden="true">
+        Fit
+      </div>
+      <div className="mt-1 font-display text-[34px] leading-none tabular" aria-hidden="true">
+        {v}
+      </div>
+      <div className="mt-2 h-1 bg-accent-track" aria-hidden="true">
+        <div className="h-full bg-accent" style={{ width: `${v}%` }} />
       </div>
     </div>
   );
@@ -33,16 +32,16 @@ function Breakdown({ card }: { card: SponsorCard }) {
     { label: "Surprise", value: 15 * card.score.surprise, max: 15, hint: "15 when the plain-LLM baseline did not name this brand" },
   ];
   return (
-    <dl className="grid grid-cols-3 gap-4">
+    <dl className="grid grid-cols-3 gap-4 sm:gap-6">
       {parts.map((p) => (
         <div key={p.label} title={p.hint}>
-          <dt className="text-label text-muted">{p.label}</dt>
-          <dd className="mt-0.5 text-sm font-medium tabular">
+          <dt className="eyebrow">{p.label}</dt>
+          <dd className="mt-1 text-sm font-semibold tabular">
             {p.value.toFixed(0)}
             <span className="font-normal text-muted">/{p.max}</span>
           </dd>
-          <div className="mt-1.5 h-1 rounded-full bg-accent-track" aria-hidden="true">
-            <div className="h-full rounded-full bg-accent" style={{ width: `${(p.value / p.max) * 100}%` }} />
+          <div className="mt-1.5 h-1.5 bg-accent-track" aria-hidden="true">
+            <div className="h-full bg-accent" style={{ width: `${(p.value / p.max) * 100}%` }} />
           </div>
         </div>
       ))}
@@ -53,8 +52,8 @@ function Breakdown({ card }: { card: SponsorCard }) {
 type Tab = "evidence" | "email" | "script";
 
 const tabBtn = (active: boolean) =>
-  `inline-flex min-h-9 items-center gap-1.5 rounded-sm px-3 py-1.5 text-[13px] font-medium transition-colors duration-150 ${
-    active ? "bg-fg text-bg" : "bg-surface-warm text-fg-2 hover:text-fg hover:shadow-[0_0_0_1px_var(--ring-warm)]"
+  `inline-flex min-h-10 items-center gap-1.5 border-b-2 font-mono text-[12px] font-bold uppercase tracking-[0.08em] transition-colors duration-150 ${
+    active ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg"
   }`;
 
 export function BrandCard({
@@ -79,31 +78,26 @@ export function BrandCard({
   for (const e of card.evidence) byDomain.set(e.domain, [...(byDomain.get(e.domain) ?? []), e]);
 
   return (
-    <article className="rise print-avoid rounded-lg bg-surface shadow-[0_0_0_1px_var(--border-soft)]" aria-labelledby={`card-${card.brand.id}-name`}>
+    <article className="frame rise print-avoid" aria-labelledby={`card-${card.brand.id}-name`}>
       <div className="p-5 sm:p-6">
         <div className="flex items-start gap-4">
-          <div className="relative">
-            <EntityImage src={card.brand.image} name={card.brand.name} className="size-12" />
-            <span className="absolute -left-2 -top-2 grid size-6 place-items-center rounded-full bg-fg text-label font-semibold text-bg ring-2 ring-surface tabular">{card.rank}</span>
-          </div>
+          <EntityImage src={card.brand.image} name={card.brand.name} className="size-12" />
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              <h3 id={`card-${card.brand.id}-name`} className="font-display text-[22px] leading-tight">
-                {card.brand.name}
-              </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="eyebrow tabular">No. {String(card.rank).padStart(2, "0")}</span>
               {card.surpriseFit && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full bg-accent-wash px-2.5 py-0.5 text-label font-medium text-accent-text"
-                  title="A plain LLM didn't suggest this brand from the show's name and topic"
-                >
-                  <Sparkles className="size-3" strokeWidth={2} aria-hidden="true" /> Surprise fit
+                <span className="tag tag-accent" title="A plain LLM didn't suggest this brand from the show's name and topic">
+                  <Sparkles className="size-3" strokeWidth={2.25} aria-hidden="true" /> Surprise fit
                 </span>
               )}
-              {card.brand.sample && <span className="rounded-full bg-warn-wash px-2 py-0.5 text-label font-medium text-warn-ink">Sample</span>}
+              {card.brand.sample && <span className="tag tag-warn">Sample</span>}
             </div>
-            {card.brand.category && <div className="mt-1 text-sm text-muted">{card.brand.category}</div>}
+            <h3 id={`card-${card.brand.id}-name`} className="mt-1.5 font-display text-[22px] leading-tight">
+              {card.brand.name}
+            </h3>
+            {card.brand.category && <div className="mt-0.5 text-sm text-muted">{card.brand.category}</div>}
           </div>
-          <ScoreRing value={card.fit} />
+          <FitScore value={card.fit} />
         </div>
 
         <div className="mt-5">
@@ -122,31 +116,38 @@ export function BrandCard({
         <div className="mt-5">
           <Breakdown card={card} />
         </div>
+      </div>
 
-        <div className="no-print mt-5 flex flex-wrap items-center gap-2">
+      <div className="no-print flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border-soft px-5 sm:px-6">
+        <div className="flex flex-wrap items-center gap-x-4">
           <button type="button" onClick={() => toggle("evidence")} aria-expanded={tab === "evidence"} aria-controls={panelId} className={tabBtn(tab === "evidence")}>
-            <ScanSearch className="size-3.5" strokeWidth={1.75} aria-hidden="true" /> Evidence
+            <ScanSearch className="size-3.5" strokeWidth={2} aria-hidden="true" /> Evidence
             <ChevronDown className={`size-3.5 transition-transform duration-150 ${tab === "evidence" ? "rotate-180" : ""}`} aria-hidden="true" />
           </button>
-          {pitch ? (
+          {pitch && (
             <>
               <button type="button" onClick={() => toggle("email")} aria-expanded={tab === "email"} aria-controls={panelId} className={tabBtn(tab === "email")}>
-                <Mail className="size-3.5" strokeWidth={1.75} aria-hidden="true" /> Pitch email
+                <Mail className="size-3.5" strokeWidth={2} aria-hidden="true" /> Email
               </button>
               <button type="button" onClick={() => toggle("script")} aria-expanded={tab === "script"} aria-controls={panelId} className={tabBtn(tab === "script")}>
-                <FileText className="size-3.5" strokeWidth={1.75} aria-hidden="true" /> Ad script
+                <FileText className="size-3.5" strokeWidth={2} aria-hidden="true" /> Script
               </button>
-              <span className="mx-1 hidden h-5 w-px bg-border-soft sm:block" aria-hidden="true" />
+            </>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 py-2.5">
+          {pitch ? (
+            <>
               <CopyButton text={emailText} label="Copy pitch email" />
               <CopyButton text={pitch.adScript} label="Copy ad script" />
             </>
           ) : pitchPending ? (
-            <span className="inline-flex items-center gap-1.5 px-2 text-[13px] text-muted" role="status">
+            <span className="inline-flex items-center gap-1.5 text-[13px] text-muted" role="status">
               <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" /> Writing pitch and script…
             </span>
           ) : (
-            <button type="button" onClick={onWritePitch} disabled={writing} className={`${tabBtn(false)} disabled:opacity-60`}>
-              {writing ? <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" /> : <PenLine className="size-3.5" strokeWidth={1.75} aria-hidden="true" />}
+            <button type="button" onClick={onWritePitch} disabled={writing} className="btn btn-secondary btn-sm">
+              {writing ? <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" /> : <PenLine className="size-3.5" strokeWidth={2} aria-hidden="true" />}
               {writing ? "Writing…" : "Write pitch and script"}
             </button>
           )}
@@ -154,19 +155,19 @@ export function BrandCard({
       </div>
 
       {tab === "evidence" && (
-        <div id={panelId} className="border-t border-border-soft px-5 py-5 sm:px-6">
+        <div id={panelId} className="border-t border-border-soft bg-bg px-5 py-5 sm:px-6">
           <div className="grid gap-5 sm:grid-cols-2">
             {[...byDomain.entries()].map(([d, list]) => {
               const M = DOMAIN_META[d];
               return (
                 <div key={d}>
-                  <div className="flex items-center justify-between gap-2 text-[13px] font-medium">
+                  <div className="flex items-center justify-between gap-2 border-b border-border-soft pb-1.5 text-[13px] font-semibold">
                     <span className="inline-flex items-center gap-1.5">
-                      <M.Icon className="size-3.5 text-muted" strokeWidth={1.75} aria-hidden="true" /> {M.label}
+                      <M.Icon className="size-3.5 text-muted" strokeWidth={2} aria-hidden="true" /> {M.label}
                     </span>
-                    <span className="font-normal text-muted tabular">{((card.perDomain[d] ?? 0) * 100).toFixed(1)}% overlap</span>
+                    <span className="font-mono text-label font-normal text-muted tabular">{((card.perDomain[d] ?? 0) * 100).toFixed(1)}% overlap</span>
                   </div>
-                  <table className="mt-2 w-full text-[13px]">
+                  <table className="mt-1.5 w-full text-[13px]">
                     <caption className="sr-only">
                       {M.label} shared by listeners and {card.brand.name} fans, with rank weights
                     </caption>
@@ -203,39 +204,30 @@ export function BrandCard({
       )}
 
       {pitch && (tab === "email" || tab === "script") && (
-        <div id={panelId} className="border-t border-border-soft px-5 py-5 sm:px-6">
-          <div className="mb-4 flex flex-wrap items-center gap-2 text-label">
-            <span className="inline-flex items-center gap-1 rounded-full bg-success-wash px-2.5 py-0.5 font-medium text-success-text">
-              <ShieldCheck className="size-3" strokeWidth={2} aria-hidden="true" /> Grounded: {pitch.references.length} reference{pitch.references.length === 1 ? "" : "s"} from
-              this run
+        <div id={panelId} className="border-t border-border-soft bg-bg px-5 py-5 sm:px-6">
+          <div className="mb-4 flex flex-wrap items-center gap-1.5">
+            <span className="tag tag-success">
+              <ShieldCheck className="size-3" strokeWidth={2.25} aria-hidden="true" /> Grounded: {pitch.references.length} reference{pitch.references.length === 1 ? "" : "s"}
             </span>
-            <span className="rounded-full bg-bg px-2.5 py-0.5 text-fg-2 shadow-[0_0_0_1px_var(--border-soft)]">
-              {pitch.source === "llm" ? "AI-written, checked in code" : "Template (deterministic)"}
-            </span>
+            <span className="tag">{pitch.source === "llm" ? "AI-written, checked in code" : "Template"}</span>
             {pitch.rejected?.length ? (
-              <span className="rounded-full bg-warn-wash px-2.5 py-0.5 text-warn-ink" title={pitch.rejected.join(", ")}>
-                Rewrote to drop {pitch.rejected.length} invented reference{pitch.rejected.length === 1 ? "" : "s"}
+              <span className="tag tag-warn" title={pitch.rejected.join(", ")}>
+                Rewrote to drop {pitch.rejected.length} invented
               </span>
             ) : null}
           </div>
           {tab === "email" ? (
             <div>
-              <div className="text-label text-muted">Subject</div>
-              <div className="mb-3 font-medium">{pitch.subject}</div>
-              <div className="whitespace-pre-wrap rounded-md bg-bg p-4 text-[15px] leading-relaxed sm:p-5">{pitch.email}</div>
-              <div className="mt-3 flex justify-end">
-                <CopyButton text={emailText} label="Copy pitch email" />
-              </div>
+              <div className="eyebrow">Subject</div>
+              <div className="mb-3 mt-1 font-semibold">{pitch.subject}</div>
+              <div className="whitespace-pre-wrap border border-border-soft bg-surface p-4 text-[15px] leading-relaxed sm:p-5">{pitch.email}</div>
             </div>
           ) : (
             <div>
-              <div className="mb-2 text-label text-muted tabular">
+              <div className="eyebrow tabular">
                 {pitch.adWords} words, about {pitch.adSeconds} s read aloud
               </div>
-              <div className="whitespace-pre-wrap rounded-md bg-bg p-4 font-display text-[17px] leading-relaxed sm:p-5">{pitch.adScript}</div>
-              <div className="mt-3 flex justify-end">
-                <CopyButton text={pitch.adScript} label="Copy ad script" />
-              </div>
+              <div className="mt-2 whitespace-pre-wrap border border-border-soft bg-surface p-4 text-[17px] leading-relaxed sm:p-5">{pitch.adScript}</div>
             </div>
           )}
         </div>

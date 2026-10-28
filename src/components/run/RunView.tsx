@@ -17,8 +17,8 @@ import { useRun, type RunUiState } from "./useRun";
 import { SAFETY_CATEGORIES } from "@/lib/safety";
 import type { PitchPack, SafetyCategory } from "@/lib/types";
 
-const btn = "inline-flex min-h-10 items-center gap-1.5 rounded-sm bg-surface px-3.5 py-2 text-sm font-medium text-fg shadow-[0_0_0_1px_var(--ring-warm)] transition-shadow duration-150 hover:shadow-[0_0_0_1px_var(--meta)]";
-const btnPrimary = "inline-flex min-h-10 items-center gap-1.5 rounded-sm bg-accent-active px-4 py-2 text-sm font-medium text-accent-on transition-[filter] duration-150 hover:brightness-95";
+const btn = "btn btn-secondary";
+const btnPrimary = "btn btn-primary";
 
 export interface RunViewProps {
   id?: string;
@@ -57,11 +57,11 @@ export function RunView(props: RunViewProps) {
         <ShowHeader state={state} title={title} props={props} onRerun={() => setNonce((n) => n + 1)} />
 
         {state.status === "error" && state.error && (
-          <div role="alert" className="mt-6 flex flex-col gap-4 rounded-lg bg-accent-wash p-5 shadow-[0_0_0_1px_color-mix(in_oklab,var(--accent)_30%,transparent)] sm:flex-row sm:items-center sm:justify-between">
+          <div role="alert" className="mt-6 flex flex-col gap-4 border border-accent bg-accent-wash p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-3">
               <TriangleAlert className="mt-0.5 size-5 shrink-0 text-accent-text" aria-hidden="true" />
               <div>
-                <div className="font-medium">{state.error.code === "RATE_LIMITED" ? "Taking a breather" : state.error.code === "NOT_FOUND" ? "Show not found" : "That didn't work"}</div>
+                <div className="font-semibold">{state.error.code === "RATE_LIMITED" ? "Taking a breather" : state.error.code === "NOT_FOUND" ? "Show not found" : "That didn't work"}</div>
                 <p className="mt-1 text-sm leading-relaxed text-fg-2">{state.error.message}</p>
               </div>
             </div>
@@ -91,11 +91,11 @@ export function RunView(props: RunViewProps) {
 
           <div className="min-w-0 space-y-6">
             {state.summary && (
-              <div className="rise rounded-lg bg-surface shadow-[0_0_0_1px_var(--border-soft)] p-5 sm:p-6">
-                <h2 className="flex items-center gap-2 text-sm text-muted">
-                  <Bot className="size-4" strokeWidth={1.75} aria-hidden="true" /> The agent&apos;s read on this audience
+              <div className="panel rise p-5 sm:p-6">
+                <h2 className="eyebrow flex items-center gap-2">
+                  <Bot className="size-4" strokeWidth={2} aria-hidden="true" /> The agent&apos;s read on this audience
                 </h2>
-                <p className="mt-2.5 max-w-[60ch] font-display text-[20px] leading-snug sm:text-[22px]">{state.summary}</p>
+                <p className="mt-3 max-w-[62ch] text-[18px] leading-relaxed text-fg sm:text-[20px]">{state.summary}</p>
               </div>
             )}
 
@@ -137,15 +137,15 @@ function ShowHeader({ state, title, props, onRerun }: { state: RunUiState; title
   };
   return (
     <div>
-      <Link href="/" className="no-print inline-flex min-h-9 items-center gap-1 text-sm text-muted transition-colors duration-150 hover:text-fg">
+      <Link href="/" className="no-print inline-flex min-h-9 items-center gap-1.5 font-mono text-[12px] font-bold uppercase tracking-[0.08em] text-muted transition-colors duration-150 hover:text-fg">
         <ArrowLeft className="size-4" aria-hidden="true" /> New search
       </Link>
       <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="flex min-w-0 items-center gap-4">
-          {p ? <EntityImage src={p.image} name={p.name} className="size-16 rounded-md" /> : <div className="skeleton size-16 rounded-md" />}
+          {p ? <EntityImage src={p.image} name={p.name} className="size-16 text-lg" /> : <div className="skeleton size-16" />}
           <div className="min-w-0">
-            <p className="text-sm text-muted">Sponsor deck</p>
-            <h1 className="truncate font-display text-[34px] leading-tight sm:text-[44px]">{title}</h1>
+            <p className="eyebrow">Sponsor deck</p>
+            <h1 className="mt-1 truncate font-display text-[34px] leading-[1.05] tracking-[-0.04em] sm:text-[48px]">{title}</h1>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
               {p?.genres?.length ? <span>{p.genres.join(", ")}</span> : p?.subtitle ? <span>{p.subtitle}</span> : null}
               {props.exclude.length > 0 && (
@@ -184,7 +184,7 @@ function ShowHeader({ state, title, props, onRerun }: { state: RunUiState; title
         </div>
       </div>
       {editing && (
-        <div className="no-print mt-4 flex flex-col gap-3 rounded-lg bg-surface shadow-[0_0_0_1px_var(--border-soft)] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="frame no-print mt-4 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <SafetyToggles value={draft} onChange={setDraft} compact />
           <button
             type="button"
@@ -232,7 +232,7 @@ function Deck({ state, props, setPitch }: { state: RunUiState; props: RunViewPro
     <section aria-labelledby="deck-h">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 id="deck-h" className="font-display text-[30px] leading-tight">
+          <h2 id="deck-h" className="font-display text-[30px] leading-tight sm:text-[34px]">
             Ranked sponsors
           </h2>
           <p className="mt-1 text-sm text-muted">Fit scores are relative rankings within this deck, not revenue predictions.</p>
@@ -244,24 +244,24 @@ function Deck({ state, props, setPitch }: { state: RunUiState; props: RunViewPro
           </span>
         )}
       </div>
-      {err && <p role="alert" className="mb-3 rounded-sm bg-accent-wash px-3 py-2 text-sm text-accent-text">{err}</p>}
+      {err && <p role="alert" className="mb-3 border border-accent bg-accent-wash px-3 py-2 text-sm text-accent-text">{err}</p>}
       {!deck ? (
         running ? (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="rounded-lg bg-surface shadow-[0_0_0_1px_var(--border-soft)] p-5 sm:p-6">
+              <div key={i} className="frame p-5 sm:p-6">
                 <div className="flex items-center gap-3">
                   <div className="skeleton size-12" />
                   <div className="flex-1 space-y-2">
                     <div className="skeleton h-4 w-40" />
                     <div className="skeleton h-3 w-24" />
                   </div>
-                  <div className="skeleton size-16 rounded-full" />
+                  <div className="skeleton h-[84px] w-[84px]" />
                 </div>
                 <div className="mt-4 flex gap-2">
-                  <div className="skeleton h-7 w-28 rounded-full" />
-                  <div className="skeleton h-7 w-32 rounded-full" />
-                  <div className="skeleton h-7 w-24 rounded-full" />
+                  <div className="skeleton h-7 w-28" />
+                  <div className="skeleton h-7 w-32" />
+                  <div className="skeleton h-7 w-24" />
                 </div>
               </div>
             ))}
@@ -269,7 +269,7 @@ function Deck({ state, props, setPitch }: { state: RunUiState; props: RunViewPro
           </div>
         ) : null
       ) : deck.length === 0 ? (
-        <p className="rounded-lg bg-surface shadow-[0_0_0_1px_var(--border-soft)] p-5 text-sm text-fg-2">No brands could be ranked for this show. Try removing some brand-safety exclusions.</p>
+        <p className="frame p-5 text-sm text-fg-2">No brands could be ranked for this show. Try removing some brand-safety exclusions.</p>
       ) : (
         <div className="space-y-4">
           {deck.map((card) => (
@@ -300,7 +300,7 @@ function MediaKit({ state, title, props }: { state: RunUiState; title: string; p
   return (
     <main id="main" className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <div className="no-print mb-6 flex flex-wrap items-center justify-between gap-3">
-        <button type="button" onClick={back} className="inline-flex min-h-9 items-center gap-1 text-sm text-muted transition-colors duration-150 hover:text-fg">
+        <button type="button" onClick={back} className="inline-flex min-h-9 items-center gap-1.5 font-mono text-[12px] font-bold uppercase tracking-[0.08em] text-muted transition-colors duration-150 hover:text-fg">
           <ArrowLeft className="size-4" aria-hidden="true" /> Back to deck
         </button>
         <div className="flex items-center gap-2">
@@ -311,33 +311,33 @@ function MediaKit({ state, title, props }: { state: RunUiState; title: string; p
         </div>
       </div>
       {mode === "sample" && (
-        <p className="mb-4 rounded-sm bg-warn-wash px-3 py-2 text-[13px] font-medium text-warn-ink">Sample data: synthetic fixtures, not Qloo output.</p>
+        <p className="mb-4 border border-warn/40 bg-warn-wash px-3 py-2 text-[13px] font-medium text-warn-ink">Sample data: synthetic fixtures, not Qloo output.</p>
       )}
       <header className="flex items-center gap-4 border-b border-border-soft pb-5">
-        {state.podcast && <EntityImage src={state.podcast.image} name={state.podcast.name} className="size-16 rounded-md" />}
+        {state.podcast && <EntityImage src={state.podcast.image} name={state.podcast.name} className="size-16 text-lg" />}
         <div>
-          <p className="text-sm text-muted">Audience media kit</p>
-          <h1 className="font-display text-[40px] leading-tight">{title}</h1>
+          <p className="eyebrow">Audience media kit</p>
+          <h1 className="mt-1 font-display text-[40px] leading-[1.05] tracking-[-0.04em]">{title}</h1>
           <div className="text-sm text-muted">
             {state.podcast?.genres?.join(", ")}
             {state.result ? `. Generated ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(state.result.createdAt))}` : ""}
           </div>
         </div>
       </header>
-      {state.summary && <p className="mt-5 font-display text-[21px] leading-snug">{state.summary}</p>}
+      {state.summary && <p className="mt-5 text-[19px] leading-relaxed">{state.summary}</p>}
       <div className="mt-6">
         <AudienceSnapshot profile={state.profile} demographics={state.demographics} geography={state.geography} podcastName={state.podcast?.name} />
       </div>
       {deck.length > 0 && (
-        <section className="print-avoid mt-6 rounded-lg bg-surface shadow-[0_0_0_1px_var(--border-soft)] p-5 sm:p-6">
+        <section className="frame print-avoid mt-6 p-5 sm:p-6">
           <h2 className="font-display text-[26px]">Brands our listeners already love</h2>
           <p className="text-sm text-muted">Ranked by HostRead fit (relative, not a revenue forecast).</p>
           <ol className="mt-4 divide-y divide-border-soft">
             {deck.slice(0, 6).map((c) => (
               <li key={c.brand.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="w-5 text-label text-muted tabular">{c.rank}</span>
-                  <span className="font-medium">{c.brand.name}</span>
+                  <span className="w-5 font-mono text-label text-muted tabular">{c.rank}</span>
+                  <span className="font-semibold">{c.brand.name}</span>
                   <span className="text-label text-muted tabular">fit {c.fit}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 sm:justify-end">
