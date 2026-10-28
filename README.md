@@ -127,6 +127,7 @@ npm run probe     # API verification probe (needs QLOO_API_KEY); prints a summar
 | `RUN_EXECUTION` | `inline` | `stream` runs the job inside the start request and streams events back (Vercel); `inline` runs it in the server and the browser polls; `background` hands it to the Netlify background function. |
 | `JOB_SECRET` | — | Shared secret between `/api/run` and the background function (any long random string). |
 | `CACHE_BACKEND` | auto | `memory`, `kv` or `blobs` (Netlify Blobs). Unset: `kv` when the KV vars are set, else `memory`. |
+| `BLOB_READ_WRITE_TOKEN` | — | Vercel Blob store for finished decks (set by `vercel blob create-store`), so cached decks survive across serverless instances. |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | — | Optional Upstash Redis, so the deck cache and rate limits are shared across serverless instances. |
 
 ## Deploy (Vercel)
@@ -135,7 +136,8 @@ The hosted demo runs on Vercel's free Hobby plan. A run takes 60-100 s, and Hobb
 
 1. Import the GitHub repo in Vercel (framework preset: Next.js; no build settings needed), or run `npx vercel link` and `npx vercel deploy --prod` from a clone.
 2. Set the environment variables (*Project → Settings → Environment Variables*, or `vercel env add`): `QLOO_API_KEY`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_LABEL`, `LLM_MAX_CONCURRENCY` and `RUN_EXECUTION=stream`.
-3. Optional: add Upstash Redis from the Vercel Marketplace (it sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`) so cached decks and rate limits are shared across function instances. Without it each instance keeps its own cache.
+3. Create a public Blob store for finished decks and connect it: `npx vercel blob create-store hostread-decks --access public --environment production`. It sets `BLOB_READ_WRITE_TOKEN`, and every function instance then serves cached decks from the Blob CDN instead of re-running the agent. A deck file holds nothing its share link doesn't already show.
+4. Optional: add Upstash Redis from the Vercel Marketplace (`KV_REST_API_URL`, `KV_REST_API_TOKEN`) to share rate limits and in-flight runs across instances too.
 
 ### Other hosts
 

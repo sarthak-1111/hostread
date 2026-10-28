@@ -12,6 +12,7 @@ export async function GET() {
       llm: llmLabel(),
       execution: config.run.execution,
       store: config.cache.backend || (config.cache.kvUrl ? "kv" : "memory"),
+      deckArchive: process.env.BLOB_READ_WRITE_TOKEN ? "vercel-blob" : "none",
       configured: {
         qlooKey: Boolean(process.env.QLOO_API_KEY),
         llmKey: Boolean(config.llm.apiKey),

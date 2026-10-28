@@ -5,6 +5,7 @@
 // the browser polls that log, or in stream mode reads it through the start
 // request. Repeat demos come straight from the result cache, and three judges
 // clicking the same example share one job.
+import { get as blobGet, put as blobPut } from "@vercel/blob";
 import { RUN_VERSION, config, dataMode } from "./config";
 import { cacheGet, cacheSet, hasSharedStore, hashKey, sharedCreate, sharedDelete, sharedGet, sharedSet } from "./cache";
 import { executeRun, type RunInput } from "./agent/run";
@@ -42,12 +43,41 @@ export function runKey(input: RunInput): string {
   return `run:${RUN_VERSION}:${dataMode()}:${hashKey(`${subject}|${input.exclude.join(",")}`)}`;
 }
 
+// Deck archive: on Vercel, function instances don't share memory, so finished
+// decks are also written to a public Vercel Blob store (BLOB_READ_WRITE_TOKEN).
+// Reads go through the Blob CDN by pathname; the path is the hashed run key and
+// a deck holds nothing the share link doesn't already show.
+const hasDeckArchive = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const deckPath = (key: string) => `decks/${key.replace(/:/g, "/")}.json`;
+const ARCHIVE_TIMEOUT_MS = 5000;
+
+async function readArchivedDeck(key: string): Promise<RunResult | undefined> {
+  const res = await blobGet(deckPath(key), { access: "public", abortSignal: AbortSignal.timeout(ARCHIVE_TIMEOUT_MS) });
+  if (!res?.stream) return undefined;
+  const deck = JSON.parse(await new Response(res.stream).text()) as RunResult;
+  const ageMs = Date.now() - Date.parse(deck.createdAt);
+  return ageMs < config.cache.runTtlSec * 1000 ? deck : undefined;
+}
+
 export async function getCachedRun(key: string): Promise<RunResult | undefined> {
-  return cacheGet<RunResult>(key);
+  const hit = await cacheGet<RunResult>(key);
+  if (hit || !hasDeckArchive()) return hit;
+  const archived = await readArchivedDeck(key).catch(() => undefined);
+  if (archived) await cacheSet(key, archived, config.cache.runTtlSec);
+  return archived;
 }
 
 export async function saveRun(key: string, result: RunResult): Promise<void> {
   await cacheSet(key, result, config.cache.runTtlSec);
+  if (!hasDeckArchive()) return;
+  await blobPut(deckPath(key), JSON.stringify(result), {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json",
+    cacheControlMaxAge: 60,
+    abortSignal: AbortSignal.timeout(ARCHIVE_TIMEOUT_MS),
+  }).catch(() => undefined);
 }
 
 export function isJobId(s: string): boolean {
