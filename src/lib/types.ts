@@ -194,6 +194,8 @@ export interface RunResult {
   stats: {
     apiCalls: number;
     llmCalls: number;
+    /** Prompt + completion tokens reported by the LLM endpoint (0 if not reported). */
+    llmTokens?: number;
     ms: number;
     steps: number;
     fallbacks: string[];

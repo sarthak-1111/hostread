@@ -52,7 +52,7 @@ let idCounter = 0;
 const newId = () => `call_${Date.now().toString(36)}_${(idCounter++).toString(36)}`;
 
 export class LlmClient {
-  readonly stats = { calls: 0, retries: 0, toolParseErrors: 0, textMode: false };
+  readonly stats = { calls: 0, retries: 0, toolParseErrors: 0, textMode: false, promptTokens: 0, completionTokens: 0 };
 
   /** Switch to text tool mode for the rest of this client's life. */
   private textToolMode = false;
@@ -180,6 +180,8 @@ export class LlmClient {
       const text = await res.text();
       if (!res.ok) throw new HttpError(`LLM ${res.status}`, res.status, text.slice(0, 500));
       const json = JSON.parse(text);
+      this.stats.promptTokens += Number(json?.usage?.prompt_tokens ?? 0);
+      this.stats.completionTokens += Number(json?.usage?.completion_tokens ?? 0);
       const msg = json?.choices?.[0]?.message;
       if (!msg) throw new HttpError("LLM returned no message", 502, text.slice(0, 200));
       return msg;

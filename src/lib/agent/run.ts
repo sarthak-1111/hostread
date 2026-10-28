@@ -102,6 +102,7 @@ export async function executeRun(input: RunInput, emit: (e: RunEvent) => void, s
       stats: {
         apiCalls: ctx.qloo.stats.apiCalls,
         llmCalls: ctx.llm.stats.calls,
+        llmTokens: ctx.llm.stats.promptTokens + ctx.llm.stats.completionTokens,
         ms: Date.now() - ctx.startedAt,
         steps: ctx.trace.length,
         fallbacks: ctx.fallbacks,
