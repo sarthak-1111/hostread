@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseSections, templatePitch, allowedReferences, stripEmphasis } from "@/lib/agent/writer";
+import { parseSections, templatePitch, allowedReferences, stripEmphasis, writePitch } from "@/lib/agent/writer";
 import { parseBrandList } from "@/lib/agent/baseline";
 import { checkGrounding } from "@/lib/grounding";
+import type { LlmClient } from "@/lib/llm/client";
 import type { SponsorCard, TasteEntity, DomainKey } from "@/lib/types";
 
 const ent = (id: string, name: string, type = "urn:entity:movie"): TasteEntity => ({ id, name, type });
@@ -36,6 +37,28 @@ describe("templatePitch", () => {
     expect(p.adSeconds).toBeGreaterThanOrEqual(40);
     expect(p.adSeconds).toBeLessThanOrEqual(62);
     expect(p.email).toContain("The Velvet Harbor");
+  });
+});
+
+describe("writePitch", () => {
+  it("keeps a grounded email and script when only a Title Case subject trips the checker", async () => {
+    const script = [
+      "Quick break, because this one fits.",
+      "If you love The Velvet Harbor and have June Hartley on repeat, you already get it.",
+      "[personal experience]",
+      ...Array(12).fill("It fits into your day without fuss, and it does its thing well."),
+      "Head to [URL] and use code [PROMO CODE].",
+    ].join(" ");
+    const text =
+      "### SUBJECT\nUnlock A Brighter Morning Ritual\n" +
+      "### EMAIL\nHi Kettlecraft Coffee partnerships team,\n\nI host The Cold Index. Our listeners and your fans both love The Velvet Harbor and June Hartley. " +
+      "I'd love to run a small test with three host-read mid-rolls and a [PROMO CODE].\n\nThanks,\n[Host Name]\n" +
+      `### AD SCRIPT\n${script}`;
+    const llm = { complete: async () => text } as unknown as LlmClient;
+    const p = await writePitch(llm, input);
+    expect(p.source).toBe("llm");
+    expect(p.subject).toBe(templatePitch(input).subject);
+    expect(p.email).toContain("June Hartley");
   });
 });
 

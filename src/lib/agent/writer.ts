@@ -70,7 +70,7 @@ function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
     (demo ? `AUDIENCE: ${demo}\n` : "") +
     `ALLOWED REFERENCES: ${allowed.map((a) => `"${a}"`).join(", ")}\n\n` +
     `Write exactly three sections with these headers:\n` +
-    `### SUBJECT\nOne email subject line.\n` +
+    `### SUBJECT\nOne email subject line in sentence case: capitalise only the first word and names.\n` +
     `### EMAIL\nA 120–170 word pitch email from the host to ${card.brand.name}'s partnerships team. Cite 2–3 shared favourites as evidence that the audiences overlap. ` +
     `Propose a small test (for example three host-read mid-rolls with a tracked promo code). Sign off as [Host Name].\n` +
     `### AD SCRIPT\nA 45–60 second host-read ad (120–150 words), first person and conversational, that speaks to listeners through one or two shared favourites ` +
@@ -129,7 +129,7 @@ export async function writePitch(llm: LlmClient | null, input: WriterInput, sign
         feedback = "Use exactly the three headers ### SUBJECT, ### EMAIL and ### AD SCRIPT.";
         continue;
       }
-      const g = checkGrounding(`${parts.subject}\n${parts.email}\n${parts.adScript}`, allowed, always);
+      const g = checkGrounding(`${parts.email}\n${parts.adScript}`, allowed, always);
       const words = wordCount(parts.adScript);
       if (!g.ok) {
         rejected.push(...g.offenders);
@@ -141,11 +141,14 @@ export async function writePitch(llm: LlmClient | null, input: WriterInput, sign
         feedback = `The ad script was ${words} words (~${readSeconds(words)} s); it must be 120–150 words so it reads in 45–60 seconds.`;
         continue;
       }
+      // The subject is checked on its own: a Title Case tagline reads like a title to the
+      // checker, and a grounded email and script are worth keeping under a safe subject.
+      const gs = checkGrounding(parts.subject, allowed, always);
       return {
-        subject: stripEmphasis(parts.subject),
+        subject: gs.ok ? stripEmphasis(parts.subject) : templateSubject(input),
         email: stripEmphasis(parts.email),
         adScript: stripEmphasis(parts.adScript),
-        references: g.cited,
+        references: [...new Set([...g.cited, ...(gs.ok ? gs.cited : [])])],
         source: "llm",
         attempts: attempt,
         adWords: words,
@@ -174,12 +177,16 @@ function listJoin(xs: string[]): string {
   return `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
 }
 
+function templateSubject({ podcast, card }: WriterInput): string {
+  return `${podcast.name} × ${card.brand.name}: a sponsor fit backed by taste data`;
+}
+
 export function templatePitch(input: WriterInput, rejected: string[] = []): PitchPack {
   const { podcast, card } = input;
   const ev: SharedEntity[] = card.topEvidence.length ? card.topEvidence : card.evidence.slice(0, 3);
   const evidenceList = listJoin(ev.map((e) => `${e.entity.name} (${DOMAINS[e.domain].label.toLowerCase()})`));
   const genre = podcast.genres?.[0]?.toLowerCase();
-  const subject = `${podcast.name} × ${card.brand.name}: a sponsor fit backed by taste data`;
+  const subject = templateSubject(input);
   const email = [
     `Hi ${card.brand.name} partnerships team,`,
     ``,
