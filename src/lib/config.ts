@@ -50,10 +50,12 @@ export const config = {
     pitchesPerIpPer10Min: num("RATE_PITCH_PER_IP_10MIN", 20),
   },
   run: {
-    // inline: run inside the web server process (local dev, long-lived hosts).
+    // inline: run inside the web server process; the browser polls the job log.
+    // stream: same, but the start request itself streams the job's events back
+    // (serverless hosts with long streaming functions, such as Vercel).
     // background: hand each run to a Netlify background function, because
     // regular functions there stop after 60 s.
-    execution: process.env.RUN_EXECUTION === "background" ? ("background" as const) : ("inline" as const),
+    execution: (["background", "stream"].includes(process.env.RUN_EXECUTION ?? "") ? process.env.RUN_EXECUTION : "inline") as "inline" | "stream" | "background",
     jobSecret: process.env.JOB_SECRET || "",
   },
   cache: {

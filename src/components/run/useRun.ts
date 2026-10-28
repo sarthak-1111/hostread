@@ -117,6 +117,33 @@ const sleep = (ms: number, signal: AbortSignal) =>
     signal.addEventListener("abort", () => (clearTimeout(t), resolve()), { once: true });
   });
 
+/** Read a run streamed as NDJSON (stream mode) until its last event. */
+async function readStream(body: ReadableStream<Uint8Array>, signal: AbortSignal, emit: (e: RunEvent) => void) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  try {
+    while (!signal.aborted) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let nl: number;
+      while ((nl = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        if (!line) continue;
+        const e = JSON.parse(line) as RunEvent | { type: "ping" };
+        if (e.type === "ping") continue;
+        emit(e);
+        if (e.type === "done" || e.type === "error") return;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  if (!signal.aborted) throw new PollError("The connection closed before the analysis finished. Reload to pick up the result.");
+}
+
 /** Poll a job's event log until it finishes. */
 async function poll(jobId: string, pollMs: number, signal: AbortSignal, emit: (e: RunEvent) => void) {
   let from = 0;
@@ -164,6 +191,10 @@ export function useRun(query: string | null) {
     (async () => {
       try {
         const res = await fetch(`/api/run?${query}`, { method: "POST", signal, cache: "no-store" });
+        if (res.ok && res.body && (res.headers.get("content-type") ?? "").includes("ndjson")) {
+          await readStream(res.body, signal, emit);
+          return;
+        }
         const start = (await res.json().catch(() => ({}))) as StartResponse;
         if (start.error || !res.ok) {
           emit({ type: "error", message: start.error ?? "The server couldn't start the analysis.", code: start.code });

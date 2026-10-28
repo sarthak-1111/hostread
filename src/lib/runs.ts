@@ -2,8 +2,9 @@
 //
 // A run is a job. Whoever executes it (this server process, or a Netlify
 // background function) appends its events to a job log in the shared store;
-// the browser polls that log. Repeat demos come straight from the result
-// cache, and three judges clicking the same example share one job.
+// the browser polls that log, or in stream mode reads it through the start
+// request. Repeat demos come straight from the result cache, and three judges
+// clicking the same example share one job.
 import { RUN_VERSION, config, dataMode } from "./config";
 import { cacheGet, cacheSet, hasSharedStore, hashKey, sharedCreate, sharedDelete, sharedGet, sharedSet } from "./cache";
 import { executeRun, type RunInput } from "./agent/run";
@@ -66,7 +67,7 @@ export async function currentJob(key: string): Promise<string | undefined> {
  * Start a job for `key`, or join the one that won the race to start it.
  * `origin` is this site's URL, used to reach the background function.
  */
-export async function startJob(key: string, input: RunInput, origin: string): Promise<{ jobId: string; joined: boolean }> {
+export async function startJob(key: string, input: RunInput, origin: string): Promise<{ jobId: string; joined: boolean; running?: Promise<void> }> {
   const jobId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
   if (!(await sharedCreate(inflightKey(key), { jobId, at: Date.now() } satisfies InflightMarker, inflightTtlSec()))) {
     const other = await currentJob(key);
@@ -75,9 +76,10 @@ export async function startJob(key: string, input: RunInput, origin: string): Pr
   // Seed the log so the first poll finds the job.
   await sharedSet(jobKey(jobId), { events: [], done: false, at: Date.now() } satisfies JobLog, JOB_TTL_SEC);
 
-  if (config.run.execution === "inline") {
-    void runJob({ jobId, key, input });
-    return { jobId, joined: false };
+  if (config.run.execution !== "background") {
+    // The caller keeps the function alive until this settles (see after() in the route).
+    const running = runJob({ jobId, key, input });
+    return { jobId, joined: false, running };
   }
   try {
     const res = await fetch(`${origin}/.netlify/functions/agent-run`, {
@@ -153,4 +155,53 @@ export async function runJob({ jobId, key, input }: JobRequest): Promise<void> {
     await flush();
     if ((await currentJob(key).catch(() => undefined)) === jobId) await sharedDelete(inflightKey(key)).catch(() => undefined);
   }
+}
+
+const encoder = new TextEncoder();
+
+/**
+ * A job's events as an NDJSON stream, one RunEvent per line, ending after the
+ * run's last event. Sends a ping line when quiet so proxies keep the
+ * connection open.
+ */
+export function streamJob(jobId: string, signal: AbortSignal): ReadableStream<Uint8Array> {
+  const pollMs = hasSharedStore() ? 900 : 250;
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let from = 0;
+      let misses = 0;
+      let lastSend = Date.now();
+      const send = (obj: unknown) => {
+        controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+        lastSend = Date.now();
+      };
+      try {
+        while (!signal.aborted) {
+          const log = await readJob(jobId).catch(() => undefined);
+          if (log) {
+            for (const e of log.events.slice(from)) send(e);
+            from = log.events.length;
+            if (log.done) break;
+            if (Date.now() - log.at > STALE_MS) {
+              send({ type: "error", message: "The analysis stopped responding. Please re-run it." } satisfies RunEvent);
+              break;
+            }
+          } else if (++misses * pollMs > 20_000) {
+            send({ type: "error", message: "The analysis didn't start. Please try again." } satisfies RunEvent);
+            break;
+          }
+          if (Date.now() - lastSend > 10_000) send({ type: "ping" });
+          await new Promise((r) => setTimeout(r, pollMs));
+        }
+      } catch {
+        // The client went away; the job itself keeps running.
+      } finally {
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
+      }
+    },
+  });
 }

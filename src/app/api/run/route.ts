@@ -1,18 +1,27 @@
 // Starts a sponsor-deck run, or returns the cached deck. The browser then polls
-// /api/run/events for the job's trace and results. Cached decks and joined
-// runs don't count against rate limits.
-import { NextResponse } from "next/server";
+// /api/run/events for the job's trace and results, or, in stream mode, reads
+// them from this response as NDJSON. Cached decks and joined runs don't count
+// against rate limits.
+import { NextResponse, after } from "next/server";
 import { parseExclusions } from "@/lib/safety";
 import { checkRunLimit, clientIp, countGlobalRun } from "@/lib/ratelimit";
-import { currentJob, getCachedRun, runKey, startJob } from "@/lib/runs";
+import { currentJob, getCachedRun, runKey, startJob, streamJob } from "@/lib/runs";
 import { config } from "@/lib/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Stream mode keeps this request open for the whole run (Vercel Hobby allows 300 s).
+export const maxDuration = 300;
 
 const noStore = { "Cache-Control": "no-store" };
 /** How often the browser should poll; a shared store costs a request per poll. */
 const pollMs = () => (config.run.execution === "background" ? 1000 : 400);
+
+function streamResponse(jobId: string, signal: AbortSignal) {
+  return new Response(streamJob(jobId, signal), {
+    headers: { ...noStore, "Content-Type": "application/x-ndjson; charset=utf-8", "X-Accel-Buffering": "no" },
+  });
+}
 
 export async function POST(req: Request) {
   const url = new URL(req.url);
@@ -31,7 +40,10 @@ export async function POST(req: Request) {
 
   try {
     const running = await currentJob(key);
-    if (running) return NextResponse.json({ jobId: running, joined: true, pollMs: pollMs() }, { headers: noStore });
+    if (running) {
+      if (config.run.execution === "stream") return streamResponse(running, req.signal);
+      return NextResponse.json({ jobId: running, joined: true, pollMs: pollMs() }, { headers: noStore });
+    }
 
     const limit = await checkRunLimit(clientIp(req));
     if (!limit.ok) {
@@ -42,6 +54,9 @@ export async function POST(req: Request) {
     }
     const job = await startJob(key, input, url.origin);
     if (!job.joined) await countGlobalRun();
+    // Keep the function alive until the run is cached, even if the browser leaves.
+    if (job.running) after(() => job.running);
+    if (config.run.execution === "stream") return streamResponse(job.jobId, req.signal);
     return NextResponse.json({ jobId: job.jobId, joined: job.joined, pollMs: pollMs() }, { headers: noStore });
   } catch {
     return NextResponse.json({ error: "The server couldn't start the analysis. Please try again in a moment.", code: "START_FAILED" }, { status: 503, headers: noStore });
