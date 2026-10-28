@@ -1,0 +1,35 @@
+{
+  "name": "hostread",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HostRead finds the sponsors a podcast's listeners already love, and writes the pitch. Powered by the Qloo taste graph.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "probe": "node --env-file=.env.local --experimental-strip-types scripts/probe.ts"
+  },
+  "dependencies": {
+    "lucide-react": "1.62.0",
+    "next": "15.5.28",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "20.19.43",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}
