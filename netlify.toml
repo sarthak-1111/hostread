@@ -1,0 +1,10 @@
+# Netlify build settings. Secrets and runtime settings (QLOO_API_KEY, LLM_*,
+# JOB_SECRET, RUN_EXECUTION=background, CACHE_BACKEND=blobs) are set in the
+# Netlify UI / API, because variables in this file don't reach functions.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"

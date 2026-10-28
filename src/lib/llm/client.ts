@@ -7,7 +7,6 @@
 //    "error parsing tool call" (ollama/ollama#17638). We retry once, then
 //    switch this client to TEXT TOOL MODE: tools are described in the prompt
 //    and the model replies with a JSON object that we parse ourselves.
-import "server-only";
 import { config } from "../config";
 import { HttpError, Semaphore, fetchWithTimeout, sleep } from "../limiter";
 import { extractJson } from "./json";

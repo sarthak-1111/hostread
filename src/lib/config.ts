@@ -1,6 +1,5 @@
 // Server-side configuration. Everything comes from env vars so the hosted demo
 // can switch data source or LLM endpoint without code changes.
-import "server-only";
 
 function num(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -50,7 +49,16 @@ export const config = {
     searchesPerIpPerMin: num("RATE_SEARCH_PER_IP_MIN", 90),
     pitchesPerIpPer10Min: num("RATE_PITCH_PER_IP_10MIN", 20),
   },
+  run: {
+    // inline: run inside the web server process (local dev, long-lived hosts).
+    // background: hand each run to a Netlify background function, because
+    // regular functions there stop after 60 s.
+    execution: process.env.RUN_EXECUTION === "background" ? ("background" as const) : ("inline" as const),
+    jobSecret: process.env.JOB_SECRET || "",
+  },
   cache: {
+    // memory | kv | blobs; unset = kv when KV credentials exist, else memory.
+    backend: process.env.CACHE_BACKEND || "",
     apiTtlSec: num("CACHE_API_TTL_SEC", 60 * 60 * 24 * 7),
     runTtlSec: num("CACHE_RUN_TTL_SEC", 60 * 60 * 24),
     kvUrl: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "",
@@ -62,6 +70,8 @@ export const config = {
 export const RUN_VERSION = "v1";
 
 export function llmLabel(): string {
+  // The hosted demo sets LLM_LABEL so the page doesn't advertise the endpoint host.
+  if (process.env.LLM_LABEL) return process.env.LLM_LABEL;
   try {
     const host = new URL(config.llm.baseUrl).host;
     return `${config.llm.model} @ ${host}`;

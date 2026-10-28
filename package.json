@@ -16,14 +16,15 @@
     "probe": "node --env-file=.env.local scripts/probe.mjs"
   },
   "dependencies": {
+    "@netlify/blobs": "11.1.4",
     "lucide-react": "1.62.0",
     "next": "15.5.28",
     "react": "19.2.9",
     "react-dom": "19.2.9",
-    "server-only": "^0.0.1",
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@netlify/functions": "6.0.2",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "20.19.43",
     "@types/react": "19.2.18",

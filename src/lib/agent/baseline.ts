@@ -1,7 +1,6 @@
 // The plain-LLM baseline: what a model guesses from the show's name and topic
 // alone, with NO taste data. Used for the "Obvious vs. Surprising" panel and
 // the surprise component of the fit score.
-import "server-only";
 import { extractJson } from "../llm/json";
 import type { LlmClient } from "../llm/client";
 import type { PodcastEntity } from "../types";

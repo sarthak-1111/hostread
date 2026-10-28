@@ -1,6 +1,7 @@
-// Runtime cache: in-memory LRU, plus an optional Redis-compatible KV over REST
-// (Upstash / Vercel KV env vars). Nothing is ever written to the repo.
-import "server-only";
+// Runtime cache: an in-memory LRU in front of an optional shared store —
+// Netlify Blobs on Netlify, or a Redis-compatible KV over REST (Upstash /
+// Vercel KV). Nothing is ever written to the repo.
+import { getStore } from "@netlify/blobs";
 import { config } from "./config";
 
 interface Entry {
@@ -9,7 +10,9 @@ interface Entry {
 }
 
 const MAX_ENTRIES = 2000;
-const mem = new Map<string, Entry>();
+// On globalThis so every route bundle (and dev hot reloads) share one map.
+const g = globalThis as typeof globalThis & { __hostreadMem?: Map<string, Entry> };
+const mem = (g.__hostreadMem ??= new Map<string, Entry>());
 
 function memGet(key: string): string | undefined {
   const e = mem.get(key);
@@ -33,7 +36,17 @@ function memSet(key: string, value: string, ttlSec: number) {
   }
 }
 
-const kvEnabled = () => Boolean(config.cache.kvUrl && config.cache.kvToken);
+/** A store shared by every server instance. */
+interface SharedStore {
+  get(key: string): Promise<string | undefined>;
+  set(key: string, value: string, ttlSec: number): Promise<void>;
+  /** Write only if the key is absent or expired. Returns whether it wrote. */
+  create(key: string, value: string, ttlSec: number): Promise<boolean>;
+  del(key: string): Promise<void>;
+  incr(key: string, ttlSec: number): Promise<number>;
+}
+
+// ---- Redis-compatible KV over REST -------------------------------------------
 
 async function kv(command: (string | number)[]): Promise<unknown> {
   const res = await fetch(config.cache.kvUrl, {
@@ -47,13 +60,93 @@ async function kv(command: (string | number)[]): Promise<unknown> {
   return json.result;
 }
 
+const kvStore: SharedStore = {
+  async get(key) {
+    const v = await kv(["GET", `hr:${key}`]);
+    return typeof v === "string" ? v : undefined;
+  },
+  async set(key, value, ttlSec) {
+    await kv(["SET", `hr:${key}`, value, "EX", ttlSec]);
+  },
+  async create(key, value, ttlSec) {
+    return (await kv(["SET", `hr:${key}`, value, "NX", "EX", ttlSec])) === "OK";
+  },
+  async del(key) {
+    await kv(["DEL", `hr:${key}`]);
+  },
+  async incr(key, ttlSec) {
+    const n = Number(await kv(["INCR", `hr:${key}`]));
+    if (n === 1) await kv(["EXPIRE", `hr:${key}`, ttlSec]);
+    return n;
+  },
+};
+
+// ---- Netlify Blobs -------------------------------------------------------------
+// Blobs have no TTL, so each value is boxed with its expiry time.
+
+interface Boxed {
+  v: string;
+  e: number;
+}
+
+let blobStore: ReturnType<typeof getStore> | undefined;
+const blobs = () => (blobStore ??= getStore({ name: "hostread", consistency: "strong" }));
+
+async function blobGet(key: string): Promise<Boxed | undefined> {
+  const b = (await blobs().get(key, { type: "json" })) as Boxed | null;
+  return b && b.e > Date.now() ? b : undefined;
+}
+
+const blobStoreShared: SharedStore = {
+  async get(key) {
+    return (await blobGet(key))?.v;
+  },
+  async set(key, value, ttlSec) {
+    await blobs().setJSON(key, { v: value, e: Date.now() + ttlSec * 1000 } satisfies Boxed);
+  },
+  async create(key, value, ttlSec) {
+    const boxed: Boxed = { v: value, e: Date.now() + ttlSec * 1000 };
+    if ((await blobs().setJSON(key, boxed, { onlyIfNew: true })).modified) return true;
+    // Present: take it over only if it has expired, and only if nobody else did first.
+    const cur = await blobs().getWithMetadata(key, { type: "json" });
+    if (!cur) return (await blobs().setJSON(key, boxed, { onlyIfNew: true })).modified;
+    if ((cur.data as Boxed).e > Date.now()) return false;
+    if (cur.etag) return (await blobs().setJSON(key, boxed, { onlyIfMatch: cur.etag })).modified;
+    await blobs().delete(key);
+    return (await blobs().setJSON(key, boxed, { onlyIfNew: true })).modified;
+  },
+  async del(key) {
+    await blobs().delete(key);
+  },
+  async incr(key, ttlSec) {
+    // Read-modify-write: good enough for soft rate limits, not for money.
+    const cur = await blobGet(key);
+    const n = (cur ? Number(cur.v) || 0 : 0) + 1;
+    await blobs().setJSON(key, { v: String(n), e: cur?.e ?? Date.now() + ttlSec * 1000 } satisfies Boxed);
+    return n;
+  },
+};
+
+function shared(): SharedStore | undefined {
+  const b = config.cache.backend;
+  if (b === "blobs") return blobStoreShared;
+  if (b === "memory") return undefined;
+  return config.cache.kvUrl && config.cache.kvToken ? kvStore : undefined;
+}
+
+export const hasSharedStore = () => shared() !== undefined;
+
+// ---- cache API -------------------------------------------------------------------
+
+/** Read-through cache for API responses and finished runs. */
 export async function cacheGet<T>(key: string): Promise<T | undefined> {
   const hit = memGet(key);
   if (hit !== undefined) return JSON.parse(hit) as T;
-  if (!kvEnabled()) return undefined;
+  const store = shared();
+  if (!store) return undefined;
   try {
-    const v = await kv(["GET", `hr:${key}`]);
-    if (typeof v !== "string") return undefined;
+    const v = await store.get(key);
+    if (v === undefined) return undefined;
     memSet(key, v, 300);
     return JSON.parse(v) as T;
   } catch {
@@ -64,21 +157,50 @@ export async function cacheGet<T>(key: string): Promise<T | undefined> {
 export async function cacheSet(key: string, value: unknown, ttlSec: number): Promise<void> {
   const s = JSON.stringify(value);
   memSet(key, s, ttlSec);
-  if (!kvEnabled()) return;
   try {
-    await kv(["SET", `hr:${key}`, s, "EX", ttlSec]);
+    await shared()?.set(key, s, ttlSec);
   } catch {
-    // KV is best effort; memory cache still holds the value.
+    // The shared store is best effort; the memory cache still holds the value.
   }
 }
 
-/** Atomic-ish counter used by rate limiting. Returns the new count. */
+// Live state (job logs, in-flight markers) skips the memory layer so every
+// instance sees the latest write. Without a shared store it lives in memory.
+
+export async function sharedGet<T>(key: string): Promise<T | undefined> {
+  const store = shared();
+  const v = store ? await store.get(key) : memGet(key);
+  return v === undefined ? undefined : (JSON.parse(v) as T);
+}
+
+export async function sharedSet(key: string, value: unknown, ttlSec: number): Promise<void> {
+  const s = JSON.stringify(value);
+  const store = shared();
+  if (store) await store.set(key, s, ttlSec);
+  else memSet(key, s, ttlSec);
+}
+
+export async function sharedCreate(key: string, value: unknown, ttlSec: number): Promise<boolean> {
+  const s = JSON.stringify(value);
+  const store = shared();
+  if (store) return store.create(key, s, ttlSec);
+  if (memGet(key) !== undefined) return false;
+  memSet(key, s, ttlSec);
+  return true;
+}
+
+export async function sharedDelete(key: string): Promise<void> {
+  const store = shared();
+  if (store) await store.del(key);
+  else mem.delete(key);
+}
+
+/** Counter used by rate limiting. Returns the new count. */
 export async function incrWithTtl(key: string, ttlSec: number): Promise<number> {
-  if (kvEnabled()) {
+  const store = shared();
+  if (store) {
     try {
-      const n = Number(await kv(["INCR", `hr:rl:${key}`]));
-      if (n === 1) await kv(["EXPIRE", `hr:rl:${key}`, ttlSec]);
-      return n;
+      return await store.incr(`rl:${key}`, ttlSec);
     } catch {
       // fall through to memory
     }
@@ -93,9 +215,10 @@ export async function incrWithTtl(key: string, ttlSec: number): Promise<number> 
 }
 
 export async function peekCounter(key: string): Promise<number> {
-  if (kvEnabled()) {
+  const store = shared();
+  if (store) {
     try {
-      return Number((await kv(["GET", `hr:rl:${key}`])) ?? 0);
+      return Number((await store.get(`rl:${key}`)) ?? 0);
     } catch {
       // fall through
     }

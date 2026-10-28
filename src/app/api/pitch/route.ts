@@ -17,7 +17,9 @@ import type { DomainKey, SponsorCard, TasteEntity } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 60;
+// Serverless hosts stop requests at 60 s; past this the writer falls back to the template.
+const DEADLINE_MS = 45_000;
 
 const Body = z.object({
   podcastId: z.string().min(1).max(160),
@@ -41,11 +43,12 @@ export async function POST(req: Request) {
   const limit = await checkSimpleLimit("pitch", clientIp(req), config.limits.pitchesPerIpPer10Min, 600);
   if (!limit.ok) return NextResponse.json({ error: limit.message }, { status: 429 });
 
+  const signal = AbortSignal.any([req.signal, AbortSignal.timeout(DEADLINE_MS)]);
   try {
     const llm = new LlmClient();
     if (cached && cachedCard) {
       const profile = new Map<DomainKey, TasteEntity[]>(cached.profile.map((p) => [p.domain, p.entities]));
-      const pitch = await writePitch(llm, { podcast: cached.podcast, card: cachedCard, profile, demographics: cached.demographics, geography: cached.geography }, req.signal);
+      const pitch = await writePitch(llm, { podcast: cached.podcast, card: cachedCard, profile, demographics: cached.demographics, geography: cached.geography }, signal);
       cachedCard.pitch = pitch;
       await saveRun(key, cached);
       return NextResponse.json({ pitch });
@@ -57,7 +60,7 @@ export async function POST(req: Request) {
       qloo: new TasteClient(40),
       llm,
       emit: () => {},
-      signal: req.signal,
+      signal,
       exclude,
       state: newState(),
       trace: [],
@@ -84,7 +87,7 @@ export async function POST(req: Request) {
       topEvidence: pickTopEvidence(overlap?.shared ?? [], 3),
       perDomain: overlap?.perDomain ?? {},
     };
-    const pitch = await writePitch(llm, { podcast, card, profile: ctx.state.profile }, req.signal);
+    const pitch = await writePitch(llm, { podcast, card, profile: ctx.state.profile }, signal);
     return NextResponse.json({ pitch });
   } catch {
     return NextResponse.json({ error: "Couldn't write the pitch right now. Please try again." }, { status: 502 });

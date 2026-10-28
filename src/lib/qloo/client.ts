@@ -5,7 +5,6 @@
 // Live calls: https://hackathon.api.qloo.com with the X-Api-Key header,
 // server-side only. Responses are normalised to small shapes before they are
 // cached (in memory / optional KV) — raw payloads are never stored or committed.
-import "server-only";
 import { config, dataMode, type DataMode } from "../config";
 import { cacheGet, cacheSet, hashKey } from "../cache";
 import { HttpError, Semaphore, fetchWithTimeout, withRetry } from "../limiter";

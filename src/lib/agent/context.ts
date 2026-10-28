@@ -1,5 +1,4 @@
 // Run context shared by the agent loop, its tools and the guardrails.
-import "server-only";
 import type { TasteClient } from "../qloo/client";
 import type { LlmClient } from "../llm/client";
 import type {

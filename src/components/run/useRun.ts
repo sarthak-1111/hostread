@@ -92,6 +92,62 @@ function reducer(state: RunUiState, a: Action): RunUiState {
   return state;
 }
 
+interface StartResponse {
+  cached?: boolean;
+  result?: RunResult;
+  jobId?: string;
+  pollMs?: number;
+  error?: string;
+  code?: string;
+}
+
+interface PollResponse {
+  found: boolean;
+  events: RunEvent[];
+  next: number;
+  done: boolean;
+  stale?: boolean;
+}
+
+class PollError extends Error {}
+
+const sleep = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve) => {
+    const t = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => (clearTimeout(t), resolve()), { once: true });
+  });
+
+/** Poll a job's event log until it finishes. */
+async function poll(jobId: string, pollMs: number, signal: AbortSignal, emit: (e: RunEvent) => void) {
+  let from = 0;
+  let misses = 0;
+  let failures = 0;
+  while (!signal.aborted) {
+    let body: PollResponse;
+    try {
+      const res = await fetch(`/api/run/events?job=${jobId}&from=${from}`, { signal, cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      body = (await res.json()) as PollResponse;
+      failures = 0;
+    } catch (err) {
+      if (signal.aborted) return;
+      // Ride out brief network blips; give up after ~15 s of failures.
+      if (++failures > 10) throw err;
+      await sleep(1500, signal);
+      continue;
+    }
+    for (const e of body.events) {
+      emit(e);
+      if (e.type === "done" || e.type === "error") return;
+    }
+    from = body.next;
+    if (body.done) throw new PollError("The analysis ended without a result. Please re-run it.");
+    if (body.stale) throw new PollError("The analysis stopped responding. Please re-run it.");
+    if (!body.found && ++misses > 30) throw new PollError("The analysis didn't start. Please try again.");
+    await sleep(pollMs, signal);
+  }
+}
+
 export function useRun(query: string | null) {
   const [state, dispatch] = useReducer(reducer, undefined, initial);
   const started = useRef<string | null>(null);
@@ -101,38 +157,34 @@ export function useRun(query: string | null) {
     started.current = query;
     dispatch({ type: "reset" });
     const ctrl = new AbortController();
+    const { signal } = ctrl;
+    const emit = (e: RunEvent) => {
+      if (!signal.aborted) dispatch({ type: "event", e });
+    };
     (async () => {
       try {
-        const res = await fetch(`/api/run?${query}`, { signal: ctrl.signal, headers: { Accept: "text/event-stream" } });
-        if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
-        const reader = res.body.getReader();
-        const dec = new TextDecoder();
-        let buf = "";
-        let finished = false;
-        for (;;) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buf += dec.decode(value, { stream: true });
-          let idx: number;
-          while ((idx = buf.indexOf("\n\n")) !== -1) {
-            const chunk = buf.slice(0, idx);
-            buf = buf.slice(idx + 2);
-            for (const line of chunk.split("\n")) {
-              if (!line.startsWith("data: ")) continue;
-              try {
-                const ev = JSON.parse(line.slice(6)) as RunEvent;
-                if (ev.type === "done" || ev.type === "error") finished = true;
-                dispatch({ type: "event", e: ev });
-              } catch {
-                /* ignore malformed frame */
-              }
-            }
-          }
+        const res = await fetch(`/api/run?${query}`, { method: "POST", signal, cache: "no-store" });
+        const start = (await res.json().catch(() => ({}))) as StartResponse;
+        if (start.error || !res.ok) {
+          emit({ type: "error", message: start.error ?? "The server couldn't start the analysis.", code: start.code });
+          return;
         }
-        if (!finished) dispatch({ type: "net-error", message: "The connection closed before the deck was finished. Reload to pick up the cached result." });
+        if (start.cached && start.result) {
+          // Replay the cached trace quickly so the run still reads as a story.
+          const r = start.result;
+          emit({ type: "meta", mode: r.mode, llm: r.llm, runId: r.runId, cached: true });
+          for (const step of r.trace) {
+            emit({ type: "step", step });
+            await sleep(18, signal);
+          }
+          emit({ type: "done", result: r });
+          return;
+        }
+        if (!start.jobId) throw new Error("no job");
+        await poll(start.jobId, start.pollMs ?? 1000, signal, emit);
       } catch (err) {
-        if (ctrl.signal.aborted) return;
-        dispatch({ type: "net-error", message: err instanceof Error && err.message.startsWith("HTTP") ? "The server couldn't start the analysis." : "Network error — check your connection and retry." });
+        if (signal.aborted) return;
+        dispatch({ type: "net-error", message: err instanceof PollError ? err.message : "Network error — check your connection and retry." });
       }
     })();
     return () => {

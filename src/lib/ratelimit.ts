@@ -1,6 +1,5 @@
 // Per-IP rate limits and a daily global cap, so judges can't (accidentally)
 // exhaust the API keys. Cached runs never count against these.
-import "server-only";
 import { config } from "./config";
 import { incrWithTtl, peekCounter } from "./cache";
 

@@ -4,7 +4,6 @@
 // this run. We check every candidate reference in code (lib/grounding.ts),
 // regenerate with feedback when the model invents one, and fall back to a
 // deterministic template if it keeps doing so or the LLM is unavailable.
-import "server-only";
 import { DOMAINS } from "../domains";
 import { checkGrounding, readSeconds, wordCount } from "../grounding";
 import type { LlmClient } from "../llm/client";

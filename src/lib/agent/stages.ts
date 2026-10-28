@@ -1,7 +1,6 @@
 // The work behind each agent tool. Tools (LLM-chosen) and guardrails
 // (auto-completion when the LLM stops early or is unavailable) both call
 // these, so a run always produces the same kind of deck.
-import "server-only";
 import { config } from "../config";
 import { DOMAINS, OVERLAP_DOMAINS, PROFILE_DOMAINS } from "../domains";
 import { mapLimit } from "../limiter";

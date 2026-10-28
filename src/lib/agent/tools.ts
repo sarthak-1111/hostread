@@ -1,7 +1,6 @@
 // Agent tools. Each wraps the taste API (through TasteClient) or deterministic
 // code, records a trace step, and returns a COMPACT JSON summary to the LLM —
 // the full data stays server-side in the run state.
-import "server-only";
 import { z } from "zod";
 import { config } from "../config";
 import { DOMAINS, OVERLAP_DOMAINS, PROFILE_DOMAINS } from "../domains";
