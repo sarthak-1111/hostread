@@ -58,5 +58,5 @@ Ties are broken by the criteria in the order above, so Technological Implementat
 - [x] Secret scan clean (no keys in history)
 - [x] No raw Qloo payloads in the repo
 - [x] Stretch goals live: brand-side mode (`/brands`, five example brands checked with live data) and the MCP server (`mcp/`, all five tools called against the live site)
-- [ ] Tag `v1.0-hackathon` pushed
+- [x] Tag `v1.0-hackathon` pushed
 - [ ] Devpost form: demo URL, repo URL, description text — filled in and **Submit** pressed by the entrant
