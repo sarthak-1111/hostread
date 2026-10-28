@@ -271,8 +271,12 @@ function finishSummary(ctx: RunContext) {
     }
   }
   if (!s.agentSummary && s.podcast) {
-    const pick = (d: "film" | "music" | "books" | "tv") => s.profile.get(d)?.[0]?.name;
-    const loves = [pick("film"), pick("music"), pick("books") ?? pick("tv")].filter(Boolean) as string[];
+    const pick = (d: "film" | "music" | "tv", label: string) => {
+      const name = s.profile.get(d)?.[0]?.name;
+      return name ? `${label} like ${name}` : undefined;
+    };
+    const parts = [pick("film", "films"), pick("tv", "shows"), pick("music", "artists")].filter(Boolean) as string[];
+    const loves = parts.length > 1 ? [`${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`] : parts;
     const top = deck[0];
     const surprises = deck.filter((c) => c.surpriseFit).length;
     s.agentSummary =

@@ -44,7 +44,9 @@ function demoLine(d?: Demographics | null): string | undefined {
 
 function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
   const { podcast, card } = input;
-  const evidence = card.evidence
+  // The card's headline chips first, so the email cites what the card shows.
+  const evidence = [...card.topEvidence, ...card.evidence]
+    .filter((s, i, all) => all.findIndex((x) => x.entity.id === s.entity.id) === i)
     .slice(0, 8)
     .map((s) => `- ${s.entity.name} (${DOMAINS[s.domain].label})`)
     .join("\n");
@@ -58,7 +60,9 @@ function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
     "(films, TV shows, artists, books, food and drink brands, places, podcasts, celebrities) are the ones in ALLOWED REFERENCES. Copy their names exactly. " +
     "Never mention any other title, artist, celebrity, place or brand. Never invent statistics, download numbers, growth or ranking claims (e.g. 'fast-growing', 'top-rated'), " +
     "prices, product features or personal anecdotes: " +
-    "the host adds their own experience later. Use the placeholders [Host Name], [URL] and [PROMO CODE], and the line [personal experience] where the host " +
+    "the host adds their own experience later. Describe the taste data honestly: people love or over-index on things; never say they mention, talk about, " +
+    "search for or buy them. Only items under SHARED FAVOURITES are shared with the brand's fans; LISTENERS ALSO LOVE items are the listeners' tastes alone. " +
+    "Use the placeholders [Host Name], [URL] and [PROMO CODE], and the line [personal experience] where the host " +
     "will add a sentence about using the product. Plain text: no markdown emphasis and no em dashes.";
   const user =
     `PODCAST: ${podcast.name}${podcast.genres?.length ? ` (${podcast.genres.join(", ")})` : ""}\n` +

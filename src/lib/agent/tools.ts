@@ -70,7 +70,7 @@ export const TOOL_SPECS: ToolSpec[] = [
       description: `How much each brand's fans like the listeners' top favourites in film, tv, music, books and food & drink (Qloo affinity for the same items). Call for the brands you want to investigate (max ${config.agent.deepDiveBrands} per run). Use brand ids exactly as returned by brand_candidates.`,
       parameters: {
         type: "object",
-        properties: { brand_ids: { type: "array", items: { type: "string" }, maxItems: 10 }, domains: { type: "array", items: { type: "string", enum: OVERLAP_DOMAINS } }, ...reasonProp },
+        properties: { brand_ids: { type: "array", items: { type: "string" }, maxItems: 10 }, ...reasonProp },
         required: ["brand_ids"],
       },
     },
@@ -117,7 +117,8 @@ export async function runTool(ctx: RunContext, name: string, rawArgs: Record<str
     return { content: JSON.stringify({ error: "Invalid arguments", details: parsed.error.issues.slice(0, 3).map((i) => `${i.path.join(".")}: ${i.message}`) }) };
   }
   const args = parsed.data as Record<string, unknown> & { reason?: string };
-  const thought = typeof args.reason === "string" ? args.reason : undefined;
+  // The model's stated reason, minus the zero-width characters gpt-oss sometimes emits.
+  const thought = typeof args.reason === "string" ? args.reason.replace(/[​-‍⁠﻿]/g, "").replace(/\s+/g, " ").trim() || undefined : undefined;
   const params = Object.fromEntries(Object.entries(args).filter(([k]) => k !== "reason"));
 
   try {
@@ -130,7 +131,8 @@ export async function runTool(ctx: RunContext, name: string, rawArgs: Record<str
         // Always fetch the full pool (50): the LLM sees the top 25, percentiles need the rest.
         return await toolCandidates(ctx, 50, thought);
       case "brand_fan_profile":
-        return await toolFanProfile(ctx, params.brand_ids as string[], (params.domains as DomainKey[] | undefined) ?? OVERLAP_DOMAINS, thought);
+        // Every brand is compared on the same domains so overlap scores stay comparable.
+        return await toolFanProfile(ctx, params.brand_ids as string[], OVERLAP_DOMAINS, thought);
       case "overlap_evidence":
         return await toolOverlap(ctx, params.brand_ids as string[] | undefined, thought);
       case "demographics":

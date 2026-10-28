@@ -172,11 +172,12 @@ export function scoreDeck({ pool, overlaps, namedByBaseline }: ScoreInput): Spon
       score,
       surpriseFit: surprise === 1,
       evidence: o.shared.slice(0, 24),
-      // Headline chips lead with pop culture (film, TV, music), the most relatable in a pitch.
+      // Headline chips lead with pop culture (film, TV, music), the most relatable in a
+      // pitch; books come last because affinity lists there lean to heavy nonfiction.
       topEvidence: pickTopEvidence(
         [...o.shared].sort((x, y) => lift(y) - lift(x) || y.listenerWeight * y.brandWeight - x.listenerWeight * x.brandWeight),
         3,
-        ["film", "tv", "music"],
+        ["film", "tv", "music", "dining", "travel", "podcasts", "books"],
       ),
       perDomain: o.perDomain,
     });
