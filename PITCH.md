@@ -1,50 +1,54 @@
 # HostRead — finalist pitch (Nov 5)
 
-Audience: Jason Calacanis, Cedric the Entertainer, Alex Elias, plus investors watching live. Keep it human, concrete and fast. Show the product early.
+Audience: Jason Calacanis, Cedric the Entertainer, Alex Elias, plus investors watching live. Tell one host's story, show the product early, and save the market numbers for the zoom-out.
 
-> Numbers below have sources at the end. Re-check them the day before; don't add any figure that isn't on that list.
+> **Dana is a composite, not a customer.** Say "imagine" when you introduce her, never give her results or revenue, and switch to a real show for the demo. If a real independent host gives you a quote before Nov 5, use it in place of Dana; a real voice beats a persona.
+>
+> Numbers have sources at the end. Re-check them the day before; don't add any figure that isn't on that list.
 
 ---
 
 ## 10-second hook
 
-"Every podcast in a genre pitches the same five sponsors. HostRead finds the brands *your* listeners already love — using what they watch, eat, read and listen to — and writes the pitch for you."
+"Every true-crime podcast pitches the same five sponsors. HostRead finds the brands your listeners actually love, and writes the pitch."
 
 ---
 
 ## 2-minute pitch
 
-**The problem (25 s).**
-There are roughly half a million active podcasts, and almost none of them have an ad-sales team. When an independent host wants a sponsor, they guess — and the guess is always the brands bigger shows in their genre already run. Ask a chatbot who should sponsor a true-crime show and you'll get the same answer for every true-crime show on Earth. That's the problem: a show's *topic* is not its *audience*.
+**Dana (25 s).**
+"Imagine Dana. She hosts a true-crime podcast with a few thousand loyal listeners and no ad-sales team. She asks a chatbot who should sponsor her. It says home security, mattresses, meal kits: the list it gives every true-crime show. She pitches them anyway. Nobody answers, because her email reads like a hundred others."
 
-**The insight (20 s).**
-Listeners are specific. The people who love one comedy podcast also love particular films, artists, restaurants and books — and so do the fans of brands that have nothing to do with comedy. If you can see both taste profiles, you can find sponsors no one else is pitching, and you can prove the fit.
+**What she's missing (10 s).**
+"Her topic isn't her audience. Her listeners share particular films, artists, restaurants and books, and so do the fans of brands she'd never think to pitch. Qloo sees both sides."
 
-**The product (40 s).** _(switch to the demo here — see script below)_
-HostRead is an agent. You type a show. It uses Qloo's taste graph to map what the listeners love across seven domains, pulls the brands they over-index on, profiles each brand's fans, and measures the overlap. You get a ranked sponsor deck: a fit score, the evidence — "your listeners and this brand's fans both love these three things" — a pitch email, and a 45-to-60-second host-read script whose cultural references come only from the data. Next to it, what a plain LLM would have guessed. The brands it missed get a "Surprise fit" badge. That's the part only Qloo makes possible.
+**Dana tries HostRead (45 s).** _(switch to the demo here; see the script below)_
+"Dana's show is made up, so here's a real one." Type the show. "The agent maps what these listeners love, pulls the brands they over-index on, and checks whose fans love the same things." Point at the #1 card. "Top pick: _[brand]_. The chatbot never mentioned it. Listeners and its fans both love _[read the three chips]_." Click **Copy pitch email**. "That's a pitch with proof in it, one a brand manager can forward to their boss. And every reference in the ad script comes from this data; we check it in code."
 
-**Why now / why us (15 s).**
-Host-read ads are the premium inventory in podcasting — around half of podcast ad spend by one industry benchmark — and they only work when the host genuinely fits the brand. HostRead turns "fit" from a gut feeling into evidence a brand manager can forward to their boss.
+**Why it matters (20 s).**
+"About half a million podcasts are active, and almost none have anyone selling ads. Host-read ads are around half of podcast ad spend by one benchmark, and they only work when the host fits the brand. HostRead turns that fit from a guess into evidence."
 
-**Business (20 s).**
-Free for independent shows — that's our supply. A paid tier for networks and agencies: multi-show workspaces, CRM export, white-label media kits. And a brand-side marketplace: brands search for the small, loyal shows whose audiences already love them, book host-reads through HostRead, and we take a cut of each booking.
+**Business (15 s).**
+"Dana uses it free; independent hosts are our supply. Networks and agencies pay for multi-show workspaces and white-label media kits. And brands get the mirror image: they find the small shows whose listeners already love them, book the read through HostRead, and we take a cut."
 
 **Close (5 s).**
-"HostRead: find the sponsors your listeners already love — and get the pitch written."
+"Dana doesn't need an ad-sales team. She needs to know what her listeners love. HostRead: find the sponsors your listeners already love, and get the pitch written."
 
 ---
 
 ## Live demo script (≈ 90 s)
 
-Pre-flight (5 minutes before): open the demo in a clean browser window; run each demo show once so it's cached; have the deck tab and a backup tab (the cached share link) ready; turn off notifications.
+This is the "Dana tries HostRead" beat at full length, for when the demo slot is separate from the pitch. Keep narrating it as Dana's afternoon.
 
-1. **Landing (10 s).** "One promise, one box." Point at the tagline. Start typing a well-known show — autocomplete shows it's a real entity in the taste graph. Pick it.
-2. **Agent trace (20 s).** "On the left you're watching the agent think." Point at a tool call: `brand_candidates`, then `brand_fan_profile` with the agent's stated reason — "it chose these eight brands and skipped the duplicates." Point at "code" steps: "Scoring is deterministic code. The LLM never touches the numbers."
-3. **Deck (25 s).** Open the #1 card. "Fit score, and the *why*: these listeners and this brand's fans both love _[read the three chips]_." Click **Evidence** to show the per-domain overlap. Click **Ad script**: "45 to 60 seconds, ready to read. Every cultural reference in here came from the data for this show — we check it in code and make the model rewrite if it invents anything." Hit **Copy pitch email**.
-4. **Obvious vs. Surprising (20 s).** Scroll. "Left: what a plain LLM guesses from the show's name. Right: what the taste graph found. The orange badges are brands the LLM never thought of." Read one surprise pick aloud and its evidence chip.
-5. **Media kit (10 s).** Click **Media kit**. "And the host gets a one-page media kit to attach to the email." Done.
+Pre-flight (5 minutes before): open the demo in a clean browser window; run each demo show once so it's cached; have the deck tab and a backup tab (the cached share link) ready; turn off notifications. Pick the demo show after API verification: ideally a real show in Dana's genre that Qloo covers well, small enough that it plausibly has no sales team.
 
-Fallbacks: if the network is slow, open the cached share link (instant). If the LLM endpoint is down, the guardrails still produce the deck and template pitches — say "this is the guardrail path" and keep going.
+1. **Landing (10 s).** "This is what Dana sees: one promise, one box." Start typing the show; autocomplete shows it's a real entity in the taste graph. Pick it.
+2. **Agent trace (20 s).** "While she waits, she can watch the agent work." Point at a tool call: `brand_candidates`, then `brand_fan_profile` with the agent's stated reason ("it chose these eight brands and skipped the duplicates"). Point at the code steps: "Scoring is deterministic code. The LLM never touches the numbers."
+3. **Her first pitch (25 s).** Open the #1 card. "Fit score, and the why: these listeners and this brand's fans both love _[read the three chips]_." Click **Evidence** to show the per-domain overlap. Click **Script**: "45 to 60 seconds, ready for Dana to read. Every cultural reference came from the data for this show; we check it in code and make the model rewrite if it invents anything." Hit **Copy pitch email**.
+4. **The list she would have sent (20 s).** Scroll to Obvious vs. Surprising. "Left: the chatbot list Dana started with. Right: what the taste graph found. The orange badges are brands the chatbot never thought of." Read one surprise pick aloud and its evidence chip.
+5. **What she attaches (10 s).** Click **Media kit**. "And Dana attaches a one-page media kit to the email." Done.
+
+Fallbacks: if the network is slow, open the cached share link (instant). If the LLM endpoint is down, the guardrails still produce the deck and template pitches; say "this is the guardrail path" and keep going.
 
 ---
 

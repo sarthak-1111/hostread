@@ -8,7 +8,9 @@ Find the sponsors your listeners already love. Get the pitch written.
 
 ## The problem
 
-There are hundreds of thousands of active podcasts, and almost none of them have an ad-sales team. An independent host who wants a sponsor has two options: join a marketplace and take whatever programmatic spot comes along, or pitch brands directly and guess which ones to pitch. Guessing usually means copying the sponsors that bigger shows in the same genre already run — so every true-crime show pitches the same home-security brand and every business show pitches the same accounting software. Those brands are crowded, the host has no evidence that their particular audience cares, and the pitch reads like everyone else's.
+Imagine Dana. (She's a composite of the hosts we built this for, not a customer.) She hosts a true-crime podcast with a few thousand loyal listeners and no ad-sales team. When she wants a sponsor, she asks a chatbot who to pitch, and it gives her the list it gives every true-crime show: home security, mattresses, meal kits. She pitches them anyway. Those brands are crowded, she has no evidence that her particular listeners care, and her email reads like a hundred others in their inbox. Nobody answers.
+
+Dana is one of hundreds of thousands of active podcasts, and almost none of them have anyone selling ads. A host who wants a sponsor can join a marketplace and take whatever programmatic spot comes along, or guess which brands to pitch directly. Guessing usually means copying what bigger shows in the same genre already run.
 
 Brands have the mirror-image problem: they buy the same handful of big shows because finding the small, loyal audiences that already love them is slow and manual.
 
@@ -16,7 +18,7 @@ What both sides are missing is evidence about **taste**: not what a show is abou
 
 ## What it does
 
-Type a podcast's name (with autocomplete). HostRead's agent:
+Dana types her show's name (with autocomplete) and watches HostRead's agent work:
 
 1. Maps the show's audience across **film, TV, music, dining, books, places and other podcasts** using Qloo's taste graph.
 2. Pulls the **brands those listeners over-index on**, minus any categories the host excludes (alcohol, gambling, tobacco, cannabis, crypto, firearms, adult).
@@ -24,6 +26,8 @@ Type a podcast's name (with autocomplete). HostRead's agent:
 4. Scores every brand with a transparent, deterministic formula and returns a **ranked sponsor deck**. Each card shows the fit score, the evidence ("Listeners and this brand's fans both love: _a film_, _an artist_, _a restaurant_"), and buttons to copy a **pitch email** and a **45–60 second host-read ad script**.
 5. Shows an **Obvious vs. Surprising** panel: what a plain LLM guesses from the show's name and topic, next to the taste-grounded picks. Brands the LLM never thought of get a **Surprise fit** badge.
 6. Produces an **audience snapshot** that doubles as a one-page, print-ready **media kit**, and a shareable link to the deck.
+
+About a minute and a half later, Dana has a first pitch she would never have found, three shared tastes that prove the fit, an email and a script ready to send, and a media kit to attach.
 
 The whole run streams live: you watch the agent choose tools, see each call's parameters, timing and result counts, and see where guardrails stepped in.
 

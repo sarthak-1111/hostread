@@ -18,6 +18,22 @@ const DELIVERABLES = [
   { Icon: Layers, t: "A one-page media kit", d: "Your audience's taste profile, ready to print or share." },
 ];
 
+// An illustrative host, labelled as such on the page. No results are attributed to her.
+const STORY = [
+  {
+    label: "The usual way",
+    text: "Dana hosts a small true-crime podcast with no ad-sales team. She asks a chatbot who should sponsor her and gets home security, mattresses and meal kits: the list every true-crime show gets. Her pitches go unanswered.",
+  },
+  {
+    label: "With HostRead",
+    text: "She types her show's name. The agent maps what her listeners love across film, TV, music, dining and books, and finds a brand whose fans love the same things. The chatbot never mentioned it.",
+  },
+  {
+    label: "What she sends",
+    text: "A pitch email naming three tastes her listeners share with that brand's fans, a host-read script built from them, and a one-page media kit.",
+  },
+];
+
 const STEPS = [
   { Icon: ScanSearch, t: "Resolve and profile the show", d: "Finds the show in the taste graph and maps what its listeners love across film, TV, music, dining, books, places and podcasts." },
   { Icon: Trophy, t: "Find candidate brands", d: "Ranks brands by affinity among your listeners, minus any categories you exclude for brand safety." },
@@ -72,14 +88,19 @@ export default function Home() {
         <section aria-labelledby="topic" className="border-y border-border-soft bg-surface/70">
           <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-24">
             <div>
-              <h2 id="topic" className="font-display text-[34px] leading-[1.05] sm:text-[44px]">
+              <p className="eyebrow">One host&apos;s story, illustrative</p>
+              <h2 id="topic" className="mt-4 font-display text-[34px] leading-[1.05] sm:text-[44px]">
                 Your topic isn&apos;t your audience.
               </h2>
+              <ol className="mt-7 max-w-[62ch] divide-y divide-border-soft border-y border-border-soft">
+                {STORY.map(({ label, text }) => (
+                  <li key={label} className="grid gap-1.5 py-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-5">
+                    <span className="eyebrow pt-1">{label}</span>
+                    <p className="leading-relaxed text-fg-2">{text}</p>
+                  </li>
+                ))}
+              </ol>
               <p className="mt-5 max-w-[62ch] leading-relaxed text-fg-2">
-                Ask a chatbot who should sponsor a true-crime show and you&apos;ll get the brands every true-crime show already runs, because it only knows the topic. Your
-                listeners are more specific: they share films, artists, restaurants and books, and so do the fans of brands you&apos;d never have thought to pitch.
-              </p>
-              <p className="mt-4 max-w-[62ch] leading-relaxed text-fg-2">
                 Every deck puts the plain-LLM guess next to the taste-grounded picks and marks the <span className="tag tag-accent align-middle">Surprise fits</span> only the
                 taste graph could find.
               </p>
@@ -89,13 +110,13 @@ export default function Home() {
                 <div className="flex items-center gap-2 font-semibold">
                   <Bot className="size-[18px] text-muted" strokeWidth={1.75} aria-hidden="true" /> Plain LLM
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-muted">Sees the show&apos;s name and topic. Guesses the category-default sponsors.</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted">Sees Dana&apos;s topic. Suggests the sponsors it gives every true-crime show.</p>
               </div>
               <div className="panel p-5">
                 <div className="flex items-center gap-2 font-semibold">
                   <Fingerprint className="size-[18px] text-accent-text" strokeWidth={1.75} aria-hidden="true" /> HostRead with Qloo
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-fg-2">Sees what the listeners love across domains, and which brands&apos; fans love the same things.</p>
+                <p className="mt-2 text-sm leading-relaxed text-fg-2">Sees what Dana&apos;s listeners love, and which brands&apos; fans love the same things.</p>
               </div>
               <ul aria-label="Taste domains" className="flex flex-wrap gap-1.5 sm:col-span-2">
                 {(Object.keys(DOMAIN_META) as DomainKey[]).map((d) => {
