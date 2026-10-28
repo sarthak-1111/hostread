@@ -31,6 +31,10 @@ About a minute and a half later, Dana has a first pitch she would never have fou
 
 The whole run streams live: you watch the agent choose tools, see each call's parameters, timing and result counts, and see where guardrails stepped in.
 
+**Brands get the same evidence the other way round.** On `/brands`, a brand types its name and gets the podcasts whose listeners already love it: Qloo ranks podcasts for the brand's fans, and HostRead checks how much each top show's listeners love those fans' favourite films, shows, artists, books and food brands. Each match has a fit score, the shared tastes, a template outreach note, and a link to that show's own sponsor deck, so a brand and a host can look at the same match from both sides. Patagonia, for example, gets The Rich Roll Podcast first, sharing _180° South_ and _Mysteries at the Museum_ with its fans.
+
+**Any agent can use it.** A small MCP server exposes `search_podcasts`, `sponsor_deck`, `write_pitch`, `search_brands` and `podcasts_for_brand`, so a network's CRM assistant or a brand's media-buying agent can call HostRead directly.
+
 ## Why it needs Qloo
 
 The hackathon's rule is "if your submission would work the same without Qloo, you're building the wrong thing." HostRead makes that test visible in the product. A plain LLM only knows a show's topic, so it suggests the category defaults. HostRead's picks come from Qloo's cross-domain affinity data — which brands this audience actually over-indexes on, and which of those brands have fans with the same taste in film, TV, music, books and food & drink. The Obvious vs. Surprising panel puts the two side by side on every run and resolves the LLM's guesses back into Qloo to show how they score with this audience.
@@ -42,6 +46,7 @@ Qloo powers every number and every reference on the page:
 - `/v2/insights` with each brand as signal — the brand's fan profile, for the overlap and the evidence
 - `/v2/insights` with `filter.results.entities` — how the plain LLM's guesses actually score with this audience
 - `/v2/insights` demographics and heatmap — the age/gender skew and geography in the media kit
+- `/v2/insights` with a brand as signal and podcasts as the type, then each show as signal with `filter.results.entities` — brand-side mode
 
 Remove Qloo and HostRead has no candidates, no evidence, no score and nothing it is allowed to cite.
 
@@ -61,6 +66,8 @@ What the LLM is **not** allowed to do is just as important:
 - **One data-access module** for Qloo (`TasteClient`), with a runtime cache (memory, optional Upstash Redis), request de-duplication and a private Vercel Blob archive of finished decks, so repeat demos are instant. Raw API payloads are never stored or committed.
 - **LLM-agnostic agent loop** over the OpenAI chat-completions API: we developed against `gpt-oss:120b` on a local Ollama server and deploy against a hosted endpoint by changing three env vars.
 - **Deterministic scoring and grounding** with unit tests.
+- **Brand-side mode** reuses the same client, overlap measure and cache with a second formula, Fit = 100 × (0.60·A + 0.40·O), and no LLM: 47 Qloo calls and about 10 seconds per fresh brand.
+- **An MCP server** (official TypeScript SDK, stdio) over the hosted API, so it needs no keys of its own.
 - **Per-IP rate limits, a daily cap and a Qloo quota guard** so the hosted demo stays up for every judge; cached decks never count.
 - **Tailwind CSS** UI on the `tom-modern` style from Open Design (Geist type, a neutral canvas, one vermillion accent, sharp corners, hard shadows), reviewed against the Vercel Web Interface Guidelines and checked in Playwright on desktop, phone and dark mode. The media kit has a print stylesheet.
 
@@ -78,20 +85,20 @@ What the LLM is **not** allowed to do is just as important:
 
 ## What's next
 
-- **Brand-side mode:** enter a brand, get the podcasts whose listeners already love it, with the same evidence.
 - **Campaign memory:** track which pitches got replies and which reads converted, and feed that back into the ranking.
-- **MCP server:** expose HostRead's tools so any agent (a network's CRM assistant, a brand's media-buying agent) can call them.
 - **Network dashboard:** run every show in a network at once and find sponsors that fit several shows.
+- **Two-sided matching:** when a brand's match list and a show's deck point at each other, introduce them, with the evidence both sides already saw.
+- **Agent-written brand outreach:** the same grounded writer for the brand side, in place of today's template note.
 
 ## Business model
 
 - **Free for independent shows:** a few decks a month, pitch emails and scripts included — the top of the funnel and the supply side of the marketplace.
 - **Paid tier for networks and agencies:** multi-show workspaces, saved decks, CRM export, white-label media kits and unlimited runs.
-- **Brand-side marketplace with a take rate:** brands discover small, high-fit shows (with the same evidence), book host-read campaigns through HostRead, and we take a percentage of each booking.
+- **Brand-side marketplace with a take rate:** brands discover small, high-fit shows (with the same evidence), book host-read campaigns through HostRead, and we take a percentage of each booking. The demo's brand-side mode is the discovery half of this today.
 
 ## Built with
 
-Qloo Insights API (Taste Analysis) and Search, Next.js, React, TypeScript, Tailwind CSS, zod, an OpenAI-compatible LLM (gpt-oss-120b), Vercel (Functions with streaming responses).
+Qloo Insights API (Taste Analysis) and Search, Next.js, React, TypeScript, Tailwind CSS, zod, an OpenAI-compatible LLM (gpt-oss-120b), Vercel (Functions with streaming responses, Blob), Model Context Protocol (TypeScript SDK).
 
 ## Links
 

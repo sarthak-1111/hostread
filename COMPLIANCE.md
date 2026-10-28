@@ -30,7 +30,7 @@ plus the Qloo hackathon developer guide and https://github.com/qloo/qloo-hackath
 |---|---|---|
 | Hackathon key works only on `https://hackathon.api.qloo.com`, header `X-Api-Key` (not a query param, not Bearer) | `QLOO_BASE_URL` defaults to that host; key sent only in the `X-Api-Key` header from server-side code | ☑ verified |
 | Never put the key in source control, a browser app or a demo recording | Key read from `QLOO_API_KEY` env var on the server only; `.env*` files gitignored; pre-push secret scan | ☑ secret scan clean |
-| "Private server-side caching is allowed with no time limit. Do not store Qloo response data in a public repository." | Runtime cache in memory / optional KV only. No raw payloads committed; SAMPLE fixtures are synthetic and generated in code | ☑ verified repo contains no API payloads or entity IDs |
+| "Private server-side caching is allowed with no time limit. Do not store Qloo response data in a public repository." | Runtime cache in memory / optional KV, plus a private Vercel Blob archive of finished (normalised) results. No raw payloads committed; SAMPLE fixtures are synthetic and generated in code | ☑ verified repo contains no API payloads or entity IDs |
 | Responses are verbose and fields can't be filtered by the API | Client normalises responses to the few fields we use | ☑ |
 | Results describe aggregate affinities, not individuals; don't send personal data to Qloo | Only public entity IDs (podcasts, brands) are sent. UI says fit scores are relative rankings, not revenue predictions | ☑ |
 | Present results with their source and limits; distinguish Qloo results from our interpretation | Evidence chips are labelled as Qloo affinity data; generated pitch text is grounding-checked and labelled as AI-written | ☑ |
@@ -57,5 +57,6 @@ Ties are broken by the criteria in the order above, so Technological Implementat
 - [x] Repo is public, has `LICENSE` (MIT) shown in About, README with run instructions
 - [x] Secret scan clean (no keys in history)
 - [x] No raw Qloo payloads in the repo
+- [x] Stretch goals live: brand-side mode (`/brands`, five example brands checked with live data) and the MCP server (`mcp/`, all five tools called against the live site)
 - [ ] Tag `v1.0-hackathon` pushed
 - [ ] Devpost form: demo URL, repo URL, description text — filled in and **Submit** pressed by the entrant

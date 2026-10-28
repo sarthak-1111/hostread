@@ -4,18 +4,20 @@
 
 HostRead is an agentic tool for independent podcasters and small networks without an ad-sales team. Type a show's name; an LLM agent uses the [Qloo](https://www.qloo.com) taste graph to map what that show's listeners love across film, TV, music, food & drink, books and places, finds the brands those listeners over-index on, checks how much each brand's fans share the same tastes, and returns a ranked **sponsor deck** — with the evidence, a pitch email and a 45–60 second host-read ad script for each brand.
 
+It also runs the other way round: a brand enters its name and gets the **podcasts whose listeners already love it** ([/brands](https://hostread.vercel.app/brands)). An [MCP server](mcp/README.md) puts both in any agent's hands.
+
 - **Live demo:** https://hostread.vercel.app (live Qloo data)
 - **Built for:** the [Qloo Agentic Hackathon](https://qloo.devpost.com) (Oct 2026)
 - **Licence:** MIT
 
 | | |
 |---|---|
-| ![Landing page with search, brand-safety toggles and example shows](docs/01-landing.png) | ![Sponsor deck: the agent trace, the agent's read on the audience and the top-ranked sponsor](docs/02-deck.png) |
-| ![Pitch email for the top sponsor, citing favourites both audiences share](docs/03-pitch.png) | ![Obvious vs. Surprising: a plain LLM's guesses next to the taste-grounded picks](docs/04-obvious-vs-surprising.png) |
+| ![Sponsor deck: the agent trace, the agent's read on the audience and the top-ranked sponsor](docs/01-deck.png) | ![Pitch email for the top sponsor, citing favourites both audiences share](docs/02-pitch.png) |
+| ![Obvious vs. Surprising: a plain LLM's guesses next to the taste-grounded picks](docs/03-obvious-vs-surprising.png) | ![One-page audience media kit](docs/04-media-kit.png) |
 
-![One-page audience media kit](docs/05-media-kit.png)
+![Brand-side mode: the podcasts whose listeners love Patagonia, with the tastes both audiences share](docs/05-brand-match.png)
 
-_Screenshots from the live demo with Qloo data, for Crime Junkie._
+_Screenshots from the live demo with Qloo data: Crime Junkie's sponsor deck, and Patagonia in brand-side mode._
 
 ## What you get
 
@@ -29,6 +31,8 @@ _Screenshots from the live demo with Qloo data, for Crime Junkie._
 | **Brand safety** | Toggle off alcohol, gambling, tobacco/vaping, cannabis/CBD, crypto, firearms or adult brands before ranking. |
 | **Live agent trace** | Every step streams in: which tool the agent chose and why, parameters, timing, API-call counts, cache hits and guardrail interventions. |
 | **Shareable results** | Every deck has a URL; repeat views come from cache and are instant. |
+| **Brand-side mode** | A brand gets the podcasts whose listeners already love it, ranked by a second transparent formula, with the shared tastes as evidence, a template outreach note, and a link to each show's own sponsor deck. No LLM involved. |
+| **MCP server** | `search_podcasts`, `sponsor_deck`, `write_pitch`, `search_brands` and `podcasts_for_brand` for Claude Desktop, Claude Code or any MCP client ([mcp/](mcp/README.md)). |
 
 ## How Qloo is used — and why an LLM alone can't do this
 
@@ -43,7 +47,10 @@ All calls go to `https://hackathon.api.qloo.com` from server-side code, with the
 | `GET /v2/insights?filter.type=urn:entity:{movie,tv_show,artist,book,destination,podcast}&signal.interests.entities=<show>` | The **audience taste profile** across domains (`audience_profile`) — the media kit, and the listeners' side of the overlap. Food & drink uses `urn:entity:brand` with `filter.tags=urn:tag:genre:brand:food_and_beverage` (place results cluster around one city; see [API_NOTES.md](API_NOTES.md)). |
 | `GET /v2/insights?filter.type=…&signal.interests.entities=<brand>&filter.results.entities=<listeners' top 20>` | How much each candidate brand's **fans** like the listeners' favourites (`brand_fan_profile`) — the other side of the overlap → the **O** term and the evidence chips. |
 | `GET /v2/insights?filter.type=urn:entity:brand&filter.results.entities=<ids>` | How the plain LLM's guessed brands actually score with this audience (Obvious vs. Surprising). |
-| `GET /search?types=urn:entity:brand` | Resolving the plain LLM's brand names to Qloo entities. |
+| `GET /search?types=urn:entity:brand` | Resolving the plain LLM's brand names to Qloo entities; brand autocomplete in brand-side mode. |
+| `GET /entities?entity_ids=<id>` | Opening a shared link: the show or brand by id. |
+| `GET /v2/insights?filter.type=urn:entity:podcast&signal.interests.entities=<brand>` | Brand-side mode: **podcasts** ranked by affinity among the brand's fans → its **A** term. |
+| `GET /v2/insights?filter.type=…&signal.interests.entities=<podcast>&filter.results.entities=<brand fans' top 20>` | Brand-side mode: how much each show's listeners like the brand fans' favourites → its **O** term and evidence. |
 | `GET /v2/insights?filter.type=urn:demographics` | Age and gender skew of the audience (`demographics`). |
 | `GET /v2/insights?filter.type=urn:heatmap&filter.location.query=United States&output.heatmap.boundary=urn:geohash` | Where the audience over-indexes (`geography`): geohash cells grouped into US metros in code. |
 
@@ -94,6 +101,23 @@ Fit = 100 × (0.50·A + 0.35·O + 0.15·S)
 
 A fit score is a **relative ranking within one show's deck**, not a prediction of revenue, CPM or conversion. The UI says so wherever scores appear.
 
+### Brand-side mode
+
+```
+Fit = 100 × (0.60·A + 0.40·O)
+```
+
+The same overlap check, run the other way round, with no LLM in the loop. Qloo returns 30 podcasts for the brand's fans; **A** is each podcast's affinity among them, min–max normalised. For the top 8, **O** compares the brand fans' top 20 favourites in film, TV, music, books and food & drink with each show's listeners' affinity for those items (`filter.results.entities`), using the same weighted Jaccard, normalised within the shortlist. An item is evidence when the listeners score it 0.75 or higher. A fresh match makes 47 Qloo calls and takes about 10 seconds; results are cached and archived like decks, and count against the same rate limits.
+
+## MCP server
+
+[`mcp/`](mcp/README.md) is a small stdio MCP server over the hosted API. It holds no keys, so the Qloo key and the LLM stay behind HostRead's rate limits and caches.
+
+```bash
+cd mcp && npm install && npm run check            # lists the tools, calls them on cached examples
+claude mcp add hostread -- node "$(pwd)/server.mjs"  # Claude Code; see mcp/README.md for Claude Desktop
+```
+
 ## Run it locally
 
 Requirements: Node.js 20.9+.
@@ -111,7 +135,7 @@ npm run dev                  # http://localhost:3000
 - **LLM:** any OpenAI-compatible endpoint. Locally, Ollama with `gpt-oss:120b` works out of the box (`LLM_BASE_URL=http://localhost:11434/v1`).
 
 ```bash
-npm test          # unit tests: scoring, grounding checker, writer, JSON parsing
+npm test          # unit tests: scoring (both modes), brand-side pipeline on fixtures, grounding checker, writer
 npm run typecheck
 npm run probe     # API verification probe (needs QLOO_API_KEY); prints a summary only
 ```
@@ -145,7 +169,7 @@ The hosted demo runs on Vercel's free Hobby plan. A run takes 60-100 s, and Hobb
 
 1. Import the GitHub repo in Vercel (framework preset: Next.js; no build settings needed), or run `npx vercel link` and `npx vercel deploy --prod` from a clone.
 2. Set the environment variables (*Project → Settings → Environment Variables*, or `vercel env add`): `QLOO_API_KEY`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_LABEL`, `LLM_MAX_CONCURRENCY` and `RUN_EXECUTION=stream`.
-3. Create a public Blob store for finished decks and connect it: `npx vercel blob create-store hostread-decks --access public --environment production`. It sets `BLOB_READ_WRITE_TOKEN`, and every function instance then serves cached decks from the Blob CDN instead of re-running the agent. A deck file holds nothing its share link doesn't already show.
+3. Create a private Blob store for finished decks and brand matches, and connect it: `npx vercel blob create-store hostread-decks-private --access private --environment production`. It sets `BLOB_READ_WRITE_TOKEN`; every function instance then reads cached results from the store (authenticated, server-side) instead of re-running the agent. `vercel link` and `create-store` write a `.env.local` into the folder; it is gitignored, but don't deploy from a folder that holds keys you didn't mean to upload.
 4. Optional: add Upstash Redis from the Vercel Marketplace (`KV_REST_API_URL`, `KV_REST_API_TOKEN`) to share rate limits and in-flight runs across instances too.
 
 ### Other hosts
@@ -167,6 +191,7 @@ The hosted demo runs on Vercel's free Hobby plan. A run takes 60-100 s, and Hobb
 - The plain-LLM baseline depends on the model used; a different model guesses different “obvious” brands.
 - Generated pitches are drafts. The grounding checker blocks invented cultural references, but hosts should still review tone and add their own product experience (the scripts leave a `[personal experience]` slot for that).
 - Without a shared store (Netlify Blobs or Upstash), caches, job logs and rate limits are per server instance.
+- Brand-side mode checks the overlap for the top 8 of the 30 podcasts Qloo returns for a brand's fans; the rest are listed by affinity only. Its outreach note is a template, not a written pitch.
 
 ## Project layout
 
@@ -174,13 +199,16 @@ The hosted demo runs on Vercel's free Hobby plan. A run takes 60-100 s, and Hobb
 src/lib/qloo/client.ts   the single taste-data module (live Qloo or SAMPLE fixtures)
 src/lib/qloo/sample.ts   synthetic fixtures (fictional, clearly labelled)
 src/lib/agent/           run loop, tools, stages, baseline, writer
-src/lib/scoring.ts       deterministic fit scoring
+src/lib/scoring.ts       deterministic fit scoring (sponsor decks and brand-side matches)
+src/lib/brandside.ts     brand-side pipeline: podcasts for a brand, reverse overlap
 src/lib/grounding.ts     reference extraction + grounding check
 src/app/api/run          start or join a run; /api/run/events polls its job log
 src/lib/runs.ts          jobs: in-flight marker, job log, inline or background execution
 src/lib/cache.ts         memory, Upstash or Netlify Blobs store
 netlify/functions/       agent-run background function
 src/components/run/      trace, sponsor cards, comparison panel, snapshot, media kit
+src/components/brand/    brand-side search, match cards, scoring explainer
+mcp/                     stdio MCP server over the hosted API
 scripts/probe.mjs        API verification probe
 ```
 
