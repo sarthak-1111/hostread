@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+
+# next.js / build
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# env files: keys live here or in the host's secret settings, never in git
+.env
+.env.*
+!.env.example
+
+# runtime caches and raw API payloads must never be committed
+.cache/
+cache/
+probe-output/
+*.raw.json
+
+# local tooling
+.claude/
+.vercel/
+.netlify/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
