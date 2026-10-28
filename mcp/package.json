@@ -1,0 +1,21 @@
+{
+  "name": "hostread-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for HostRead: sponsor decks for podcasts and podcast matches for brands, from the hosted HostRead API",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "hostread-mcp": "server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "zod": "3.25.76"
+  }
+}
