@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeOverlap, normaliseAffinity, pickTopEvidence, rankWeight, scoreDeck, weightedJaccard } from "@/lib/scoring";
-import type { BrandEntity, DomainProfile, TasteEntity } from "@/lib/types";
+import { computeOverlap, normaliseAffinity, pickTopEvidence, rankWeight, scoreDeck, scorePodcastMatches, weightedJaccard } from "@/lib/scoring";
+import type { BrandEntity, DomainProfile, PodcastEntity, TasteEntity } from "@/lib/types";
 
 const ent = (id: string, rank: number): TasteEntity => ({ id, name: id.toUpperCase(), type: "urn:entity:movie", rank });
 
@@ -97,5 +97,33 @@ describe("scoreDeck", () => {
     expect(deck.find((c) => c.brand.id === "b")!.surpriseFit).toBe(true);
     expect(deck.map((c) => c.brand.id)).toEqual(["a", "b", "c"]);
     expect(deck.map((c) => c.rank)).toEqual([1, 2, 3]);
+  });
+});
+
+describe("scorePodcastMatches", () => {
+  it("applies Fit = 100 × (0.60·A + 0.40·O) and labels each side's affinity", () => {
+    const pool: PodcastEntity[] = [
+      { id: "p1", name: "One", type: "urn:entity:podcast", affinity: 0.95 },
+      { id: "p2", name: "Two", type: "urn:entity:podcast", affinity: 0.85 },
+      { id: "p3", name: "Three", type: "urn:entity:podcast", affinity: 0.75 },
+    ];
+    // The brand fans' favourites, and each show's listeners' affinity for them.
+    const fans: DomainProfile[] = [{ domain: "film", entities: [aff("f1", 0.95), aff("f2", 0.9)] }];
+    const listeners = (a: number, b: number): DomainProfile[] => [{ domain: "film", entities: [aff("f1", a), aff("f2", b)] }];
+    const matches = scorePodcastMatches(pool, [
+      computeOverlap("p1", fans, listeners(0.6, 0.5)),
+      computeOverlap("p2", fans, listeners(0.9, 0.85)),
+      computeOverlap("p3", fans, listeners(0.7, 0.6)),
+    ]);
+    const fit = (id: string) => matches.find((m) => m.podcast.id === id)!.fit;
+    // One: A=1, O=0 -> 60. Two: A=0.5, O=1 -> 30 + 40 = 70.
+    expect(fit("p1")).toBe(60);
+    expect(fit("p2")).toBe(70);
+    expect(matches.map((m) => m.podcast.id)).toEqual(["p2", "p1", "p3"]);
+    // Evidence needs the listeners at 0.75+; listenerWeight is the listeners' side.
+    const two = matches.find((m) => m.podcast.id === "p2")!;
+    expect(two.evidence.map((e) => e.entity.id).sort()).toEqual(["f1", "f2"]);
+    expect(two.evidence.find((e) => e.entity.id === "f1")).toMatchObject({ listenerWeight: 0.9, brandWeight: 0.95 });
+    expect(matches.find((m) => m.podcast.id === "p1")!.evidence).toEqual([]);
   });
 });

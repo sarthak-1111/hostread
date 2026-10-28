@@ -51,23 +51,32 @@ const hasDeckArchive = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const deckPath = (key: string) => `decks/${key.replace(/:/g, "/")}.json`;
 const ARCHIVE_TIMEOUT_MS = 5000;
 
-async function readArchivedDeck(key: string): Promise<RunResult | undefined> {
+async function readArchived<T extends { createdAt: string }>(key: string): Promise<T | undefined> {
   const res = await blobGet(deckPath(key), { access: "private", abortSignal: AbortSignal.timeout(ARCHIVE_TIMEOUT_MS) });
   if (!res?.stream) return undefined;
-  const deck = JSON.parse(await new Response(res.stream).text()) as RunResult;
+  const deck = JSON.parse(await new Response(res.stream).text()) as T;
   const ageMs = Date.now() - Date.parse(deck.createdAt);
   return ageMs < config.cache.runTtlSec * 1000 ? deck : undefined;
 }
 
-export async function getCachedRun(key: string): Promise<RunResult | undefined> {
-  const hit = await cacheGet<RunResult>(key);
+/** A finished result (sponsor deck or brand match) from memory, else the archive. */
+export async function getCachedResult<T extends { createdAt: string }>(key: string): Promise<T | undefined> {
+  const hit = await cacheGet<T>(key);
   if (hit || !hasDeckArchive()) return hit;
-  const archived = await readArchivedDeck(key).catch(() => undefined);
+  const archived = await readArchived<T>(key).catch(() => undefined);
   if (archived) await cacheSet(key, archived, config.cache.runTtlSec);
   return archived;
 }
 
-export async function saveRun(key: string, result: RunResult): Promise<void> {
+export function getCachedRun(key: string): Promise<RunResult | undefined> {
+  return getCachedResult<RunResult>(key);
+}
+
+export function saveRun(key: string, result: RunResult): Promise<void> {
+  return saveResult(key, result);
+}
+
+export async function saveResult(key: string, result: { createdAt: string }): Promise<void> {
   await cacheSet(key, result, config.cache.runTtlSec);
   if (!hasDeckArchive()) return;
   await blobPut(deckPath(key), JSON.stringify(result), {

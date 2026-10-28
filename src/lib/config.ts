@@ -73,6 +73,9 @@ export const config = {
 /** Bump to invalidate cached runs after scoring / prompt changes. */
 export const RUN_VERSION = "v5";
 
+/** Same, for brand-side matches. */
+export const BRAND_MATCH_VERSION = "b1";
+
 export function llmLabel(): string {
   // The hosted demo sets LLM_LABEL so the page doesn't advertise the endpoint host.
   if (process.env.LLM_LABEL) return process.env.LLM_LABEL;

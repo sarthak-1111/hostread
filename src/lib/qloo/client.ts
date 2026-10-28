@@ -260,6 +260,24 @@ export class TasteClient {
     return undefined;
   }
 
+  async getBrand(id: string, nameHint?: string): Promise<BrandEntity | undefined> {
+    if (this.mode === "sample") return this.simulate(() => sample.sampleGetBrand(id));
+    try {
+      const viaEntities = await this.get("/entities", { entity_ids: id }, (json) => {
+        const e = insightsEntities(json)[0];
+        return e ? toBrand(normEntity(e), e?.properties) : null;
+      });
+      if (viaEntities) return viaEntities;
+    } catch (err) {
+      if (err instanceof BudgetExceededError) throw err;
+    }
+    if (nameHint) {
+      const hits = await this.searchBrands(nameHint, 10);
+      return hits.find((h) => h.id === id) ?? undefined;
+    }
+    return undefined;
+  }
+
   /** Top entities in one domain for the audience of `signalId`. */
   async domainProfile(signalId: string, domain: DomainKey, take = 40): Promise<TasteEntity[]> {
     if (this.mode === "sample") return this.simulate(() => sample.sampleInsights({ domain, signalId, take }));
@@ -314,7 +332,7 @@ export class TasteClient {
 
   /** Podcasts whose listeners love `brandId` (brand-side mode). */
   async podcastsForBrand(brandId: string, take = 20): Promise<PodcastEntity[]> {
-    if (this.mode === "sample") return this.simulate(() => sample.sampleSearchPodcasts("", take));
+    if (this.mode === "sample") return this.simulate(() => sample.samplePodcastsForBrand(brandId, take));
     return this.get("/v2/insights", { "filter.type": "urn:entity:podcast", "signal.interests.entities": brandId, take }, (json) =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       insightsEntities(json).map((e: any, i: number) => toPodcast(normEntity(e, i + 1))),
@@ -350,4 +368,8 @@ export class TasteClient {
 
 export function exampleShowsForMode(mode: DataMode): PodcastEntity[] {
   return mode === "sample" ? sample.sampleExampleShows() : [];
+}
+
+export function exampleBrandsForMode(mode: DataMode): BrandEntity[] {
+  return mode === "sample" ? sample.sampleExampleBrands() : [];
 }

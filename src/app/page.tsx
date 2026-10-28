@@ -1,4 +1,5 @@
-import { Bot, FileText, Fingerprint, Layers, Mail, ScanSearch, ShieldCheck, Sparkles, Trophy } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Bot, FileText, Fingerprint, Layers, Mail, ScanSearch, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { SampleBanner, SiteFooter, SiteHeader } from "@/components/chrome";
 import { LaunchPanel, type LaunchExample } from "@/components/LaunchPanel";
 import { HowWeScore } from "@/components/HowWeScore";
@@ -63,6 +64,12 @@ export default function Home() {
             <div className="mt-9 max-w-2xl">
               <LaunchPanel examples={examples} />
             </div>
+            <p className="mt-8 text-[15px] text-fg-2">
+              Are you a brand?{" "}
+              <Link href="/brands" className="inline-flex items-center gap-1 font-medium text-fg underline decoration-border underline-offset-4 hover:decoration-accent">
+                Find podcasts whose listeners love you <ArrowRight className="size-3.5" aria-hidden="true" />
+              </Link>
+            </p>
           </div>
 
           <aside aria-labelledby="deliverables" className="panel self-center p-6 sm:p-7">

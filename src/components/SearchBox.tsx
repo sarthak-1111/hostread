@@ -12,19 +12,27 @@ export interface Suggestion {
   sample?: boolean;
 }
 
+const KIND = {
+  podcast: { noun: "podcast", label: "Podcast name", action: "Find sponsors", param: "", missing: "Press Enter and the agent will search for it." },
+  brand: { noun: "brand", label: "Brand name", action: "Find podcasts", param: "&type=brand", missing: "Press Enter to try the closest match." },
+} as const;
+
 export function SearchBox({
   onPick,
   onFreeText,
-  placeholder = "Search for a podcast…",
+  kind = "podcast",
+  placeholder = kind === "brand" ? "Search for a brand…" : "Search for a podcast…",
   size = "lg",
   autoFocus = false,
 }: {
   onPick: (s: Suggestion) => void;
   onFreeText: (q: string) => void;
+  kind?: keyof typeof KIND;
   placeholder?: string;
   size?: "lg" | "md";
   autoFocus?: boolean;
 }) {
+  const k = KIND[kind];
   const [q, setQ] = useState("");
   const [items, setItems] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -52,7 +60,7 @@ export function SearchBox({
     setLoading(true);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(term)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(term)}${k.param}`);
         const json = (await res.json()) as { results?: Suggestion[]; error?: string };
         if (id !== reqId.current) return;
         setItems(json.results ?? []);
@@ -66,7 +74,7 @@ export function SearchBox({
       }
     }, 220);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, k.param]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -98,7 +106,7 @@ export function SearchBox({
         <Search className={`${big ? "size-5" : "size-4"} shrink-0 text-muted`} strokeWidth={1.75} aria-hidden="true" />
         <input
           ref={inputRef}
-          name="podcast"
+          name={k.noun}
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -118,7 +126,7 @@ export function SearchBox({
             }
           }}
           placeholder={placeholder}
-          aria-label="Podcast name"
+          aria-label={k.label}
           role="combobox"
           aria-expanded={open && items.length > 0}
           aria-controls={listId}
@@ -132,9 +140,9 @@ export function SearchBox({
         <button
           type="submit"
           className={`btn btn-primary shrink-0 ${big ? "h-12 px-5" : "btn-sm"}`}
-          aria-label="Find sponsors"
+          aria-label={k.action}
         >
-          <span className="hidden sm:inline">Find sponsors</span>
+          <span className="hidden sm:inline">{k.action}</span>
           <ArrowRight className="size-4" aria-hidden="true" />
         </button>
       </form>
@@ -162,7 +170,7 @@ export function SearchBox({
             </li>
           ))}
           {!items.length && !loading && (
-            <li className="px-3 py-3 text-sm text-muted">{error ?? `No podcasts found for “${q.trim()}”. Press Enter and the agent will search for it.`}</li>
+            <li className="px-3 py-3 text-sm text-muted">{error ?? `No ${k.noun}s found for “${q.trim()}”. ${k.missing}`}</li>
           )}
         </ul>
       )}

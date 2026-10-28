@@ -294,6 +294,24 @@ export function sampleSearchBrands(query: string, take = 5): BrandEntity[] {
     .map(brandToEntity);
 }
 
+export function sampleExampleBrands(): BrandEntity[] {
+  return BRANDS.filter((b) => !b.safety).slice(0, 5).map(brandToEntity);
+}
+
+export function sampleGetBrand(id: string): BrandEntity | undefined {
+  const b = BRANDS.find((x) => x.id === id);
+  return b ? brandToEntity(b) : undefined;
+}
+
+/** Shows ranked by how much a brand's fans would like them (brand-side mode). */
+export function samplePodcastsForBrand(brandId: string, take = 20): PodcastEntity[] {
+  const sig = vecForSignal(brandId);
+  if (!sig) return [];
+  const noise = (id: string) => rng(hash(`${brandId}|${id}`))() - 0.5;
+  const ranked = rankBy(SHOWS, (s) => dot(sig, s.vec) + 0.1 * s.popularity + 0.2 * noise(s.id), take);
+  return ranked.map(({ item }, i) => ({ ...showToEntity(item), rank: i + 1, affinity: affinityForRank(i + 1, ranked.length) }));
+}
+
 export function sampleBrandSafety(id: string): SafetyCategory | undefined {
   return BRANDS.find((b) => b.id === id)?.safety;
 }

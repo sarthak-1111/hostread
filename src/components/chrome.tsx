@@ -40,6 +40,9 @@ export function SiteHeader({ mode }: { mode: "live" | "sample" }) {
           <Link href="/#scoring" className={navLink}>
             How we score
           </Link>
+          <Link href="/brands" className={navLink}>
+            For brands
+          </Link>
           <ModePill mode={mode} />
           <a
             href={REPO_URL}

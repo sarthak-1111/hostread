@@ -7,10 +7,10 @@ import { CopyButton } from "./CopyButton";
 import type { DomainKey, PitchPack, SponsorCard } from "@/lib/types";
 
 /** Fit score: the number plus a single-hue meter on a lighter track of the same hue. */
-function FitScore({ value }: { value: number }) {
+export function FitScore({ value, within = "this deck" }: { value: number; within?: string }) {
   const v = Math.max(0, Math.min(100, value));
   return (
-    <div className="w-[84px] shrink-0 border border-border-soft bg-bg px-2.5 pb-2.5 pt-2" role="img" aria-label={`Fit ${v} out of 100, a relative ranking within this deck`}>
+    <div className="w-[84px] shrink-0 border border-border-soft bg-bg px-2.5 pb-2.5 pt-2" role="img" aria-label={`Fit ${v} out of 100, a relative ranking within ${within}`}>
       <div className="eyebrow" aria-hidden="true">
         Fit
       </div>

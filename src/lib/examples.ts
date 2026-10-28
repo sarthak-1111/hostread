@@ -6,6 +6,15 @@ export interface ExampleShow {
   id?: string;
 }
 
+/** Brand-side examples, also resolved by name through Qloo search. */
+export const BRAND_EXAMPLES: ExampleShow[] = [
+  { name: "Allbirds", genre: "Footwear" },
+  { name: "Liquid Death", genre: "Beverage" },
+  { name: "Duolingo", genre: "App" },
+  { name: "Glossier", genre: "Beauty" },
+  { name: "Patagonia", genre: "Outdoor" },
+];
+
 export const LIVE_EXAMPLES: ExampleShow[] = [
   { name: "Crime Junkie", genre: "True crime" },
   { name: "SmartLess", genre: "Comedy" },

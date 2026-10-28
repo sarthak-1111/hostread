@@ -126,6 +126,38 @@ export interface SponsorCard {
   pitch?: PitchPack;
 }
 
+/** Brand-side mode: one podcast whose listeners love the brand. */
+export interface PodcastMatch {
+  rank: number;
+  podcast: PodcastEntity;
+  fit: number;
+  score: {
+    /** A: Qloo affinity of the podcast among the brand's fans, normalised across candidates (0..1). */
+    affinity: number;
+    /** O: taste overlap, normalised within the shortlist (0..1). */
+    overlap: number;
+    rawAffinity?: number;
+    rawOverlap: number;
+  };
+  /** Brand fans' favourites the listeners also love (listenerWeight / brandWeight are Qloo affinities). */
+  evidence: SharedEntity[];
+  topEvidence: SharedEntity[];
+  perDomain: Partial<Record<DomainKey, number>>;
+}
+
+export interface BrandMatchResult {
+  matchId: string;
+  mode: "live" | "sample";
+  createdAt: string;
+  brand: BrandEntity;
+  /** What the brand's fans love, per overlap domain. */
+  fanProfile: DomainProfile[];
+  matches: PodcastMatch[];
+  /** Further podcasts with high affinity among the brand's fans, not deep-dived. */
+  more: PodcastEntity[];
+  stats: { apiCalls: number; ms: number; candidates: number };
+}
+
 export interface BaselinePick {
   name: string;
   /** Matched Qloo brand, if the name resolved. */
