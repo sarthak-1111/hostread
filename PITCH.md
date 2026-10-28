@@ -23,7 +23,7 @@ Audience: Jason Calacanis, Cedric the Entertainer, Alex Elias, plus investors wa
 "Her topic isn't her audience. Her listeners share particular films, artists, restaurants and books, and so do the fans of brands she'd never think to pitch. Qloo sees both sides."
 
 **Dana tries HostRead (45 s).** _(switch to the demo here; see the script below)_
-"Dana's show is made up, so here's a real one." Type the show. "The agent maps what these listeners love, pulls the brands they over-index on, and checks whose fans love the same things." Point at the #1 card. "Top pick: _[brand]_. The chatbot never mentioned it. Listeners and its fans both love _[read the three chips]_." Click **Copy pitch email**. "That's a pitch with proof in it, one a brand manager can forward to their boss. And every reference in the ad script comes from this data; we check it in code."
+"Dana's show is made up, so here's a real one." Type the show. "The agent maps what these listeners love, pulls the brands they over-index on, and checks whose fans love the same things." Point at the #1 card. "Top pick: Loopycases, a phone-case brand. The chatbot never mentioned it. Listeners and its fans both love Big Time Adolescence, Great News and Walker Hayes." Click **Copy pitch email**. "That's a pitch with proof in it, one a brand manager can forward to their boss. And every reference in the ad script comes from this data; we check it in code."
 
 **Why it matters (20 s).**
 "About half a million podcasts are active, and almost none have anyone selling ads. Host-read ads are around half of podcast ad spend by one benchmark, and they only work when the host fits the brand. HostRead turns that fit from a guess into evidence."
@@ -40,7 +40,7 @@ Audience: Jason Calacanis, Cedric the Entertainer, Alex Elias, plus investors wa
 
 This is the "Dana tries HostRead" beat at full length, for when the demo slot is separate from the pitch. Keep narrating it as Dana's afternoon.
 
-Pre-flight (5 minutes before): open the demo in a clean browser window; run each demo show once so it's cached; have the deck tab and a backup tab (the cached share link) ready; turn off notifications. Pick the demo show after API verification: ideally a real show in Dana's genre that Qloo covers well, small enough that it plausibly has no sales team.
+Pre-flight (5 minutes before): open the demo in a clean browser window; run each demo show once so it's cached; have the deck tab and a backup tab (the cached share link) ready; turn off notifications. Demo show: **Crime Junkie** (Dana's genre, cached on the live site). As of Oct 29 its deck reads: #1 **Loopycases** (phone cases, fit 89, Surprise fit); chips **Big Time Adolescence** (film), **Great News** (TV), **Walker Hayes** (music); the plain LLM's list is Audible, LegalZoom, Allstate, Stitch Fix, Casper and similar, at a median Qloo affinity of 0.75 against 0.97 for HostRead's picks. Open the deck the day before and update these names if they changed.
 
 1. **Landing (10 s).** "This is what Dana sees: one promise, one box." Start typing the show; autocomplete shows it's a real entity in the taste graph. Pick it.
 2. **Agent trace (20 s).** "While she waits, she can watch the agent work." Point at a tool call: `brand_candidates`, then `brand_fan_profile` with the agent's stated reason ("it chose these eight brands and skipped the duplicates"). Point at the code steps: "Scoring is deterministic code. The LLM never touches the numbers."
