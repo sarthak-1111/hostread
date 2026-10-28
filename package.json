@@ -14,7 +14,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "probe": "node --env-file=.env.local --experimental-strip-types scripts/probe.ts"
+    "probe": "node --env-file=.env.local scripts/probe.mjs"
   },
   "dependencies": {
     "lucide-react": "1.62.0",

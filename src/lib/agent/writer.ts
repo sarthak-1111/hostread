@@ -57,8 +57,9 @@ function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
   const system =
     "You write sponsorship materials for independent podcast hosts. GROUNDING RULE: the only cultural references you may mention " +
     "(films, TV shows, artists, books, restaurants, places, podcasts, celebrities) are the ones in ALLOWED REFERENCES — copy their names exactly. " +
-    "Never mention any other title, artist, celebrity, place or brand. Never invent statistics, download numbers, prices or product claims. " +
-    "Use the placeholders [Host Name], [URL] and [PROMO CODE], and [personal experience] where the host should add a sentence about using the product.";
+    "Never mention any other title, artist, celebrity, place or brand. Never invent statistics, download numbers, prices, product features or personal anecdotes — " +
+    "the host adds their own experience later. Use the placeholders [Host Name], [URL] and [PROMO CODE], and the line [personal experience] where the host " +
+    "will add a sentence about using the product. Plain text: no markdown emphasis.";
   const user =
     `PODCAST: ${podcast.name}${podcast.genres?.length ? ` (${podcast.genres.join(", ")})` : ""}\n` +
     `BRAND: ${card.brand.name}${card.brand.category ? ` (category: ${card.brand.category})` : ""}\n` +
@@ -72,8 +73,9 @@ function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
     `### SUBJECT\nOne email subject line.\n` +
     `### EMAIL\nA 120–170 word pitch email from the host to ${card.brand.name}'s partnerships team. Cite 2–3 shared favourites as evidence that the audiences overlap. ` +
     `Propose a small test (for example three host-read mid-rolls with a tracked promo code). Sign off as [Host Name].\n` +
-    `### AD SCRIPT\nA 45–60 second host-read ad (110–150 words), first person and conversational, that weaves in one or two shared favourites naturally, ` +
-    `describes ${card.brand.name} only in general terms, includes [personal experience], and ends with [URL] and [PROMO CODE].\n` +
+    `### AD SCRIPT\nA 45–60 second host-read ad (120–150 words), first person and conversational, that speaks to listeners through one or two shared favourites ` +
+    `(as tastes they have, not as things the host did), describes ${card.brand.name} only in general terms, contains the line [personal experience], ` +
+    `and ends with [URL] and [PROMO CODE].\n` +
     (feedback ? `\nIMPORTANT — fix this in your rewrite: ${feedback}\n` : "");
   return { system, user };
 }
@@ -122,8 +124,9 @@ export async function writePitch(llm: LlmClient | null, input: WriterInput, sign
         feedback = `You mentioned ${g.offenders.map((o) => `"${o}"`).join(", ")}, which ${g.offenders.length === 1 ? "is" : "are"} not in ALLOWED REFERENCES. Remove ${g.offenders.length === 1 ? "it" : "them"} and use only allowed references.`;
         continue;
       }
-      if ((words < 95 || words > 175) && attempt < MAX_ATTEMPTS) {
-        feedback = `The ad script was ${words} words; it must be 110–150 words.`;
+      // 45–60 s at ~150 wpm ≈ 112–150 words; allow a little slack before asking for a rewrite.
+      if ((words < 108 || words > 165) && attempt < MAX_ATTEMPTS) {
+        feedback = `The ad script was ${words} words (~${readSeconds(words)} s); it must be 120–150 words so it reads in 45–60 seconds.`;
         continue;
       }
       return { ...parts, references: g.cited, source: "llm", attempts: attempt, adWords: words, adSeconds: readSeconds(words), rejected: rejected.length ? [...new Set(rejected)] : undefined };

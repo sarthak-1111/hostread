@@ -27,7 +27,7 @@ const domainEnum = z.enum(["film", "tv", "music", "dining", "books", "travel", "
 const schemas = {
   resolve_podcast: z.object({ query: z.string().min(1).max(120).optional(), select_id: z.string().max(120).optional(), reason: z.string().max(300).optional() }),
   audience_profile: z.object({ domains: z.array(domainEnum).max(7).optional(), reason: z.string().max(300).optional() }),
-  brand_candidates: z.object({ take: z.number().int().min(10).max(50).optional(), reason: z.string().max(300).optional() }),
+  brand_candidates: z.object({ take: z.number().int().optional(), reason: z.string().max(300).optional() }),
   brand_fan_profile: z.object({ brand_ids: z.array(z.string().max(160)).min(1).max(10), domains: z.array(domainEnum).max(5).optional(), reason: z.string().max(400).optional() }),
   overlap_evidence: z.object({ brand_ids: z.array(z.string().max(160)).max(10).optional(), reason: z.string().max(300).optional() }),
   demographics: z.object({ reason: z.string().max(300).optional() }),
@@ -61,7 +61,7 @@ export const TOOL_SPECS: ToolSpec[] = [
     function: {
       name: "brand_candidates",
       description: "Brands ranked by affinity among this podcast's listeners (Qloo). Brand-safety exclusions chosen by the user are applied automatically.",
-      parameters: { type: "object", properties: { take: { type: "integer", minimum: 10, maximum: 50 }, ...reasonProp } },
+      parameters: { type: "object", properties: { ...reasonProp } },
     },
   },
   {
@@ -128,7 +128,8 @@ export async function runTool(ctx: RunContext, name: string, rawArgs: Record<str
       case "audience_profile":
         return await toolProfile(ctx, (params.domains as DomainKey[] | undefined) ?? PROFILE_DOMAINS, thought);
       case "brand_candidates":
-        return await toolCandidates(ctx, (params.take as number | undefined) ?? 50, thought);
+        // Always fetch the full pool (50): the LLM sees the top 25, percentiles need the rest.
+        return await toolCandidates(ctx, 50, thought);
       case "brand_fan_profile":
         return await toolFanProfile(ctx, params.brand_ids as string[], (params.domains as DomainKey[] | undefined) ?? OVERLAP_DOMAINS, thought);
       case "overlap_evidence":

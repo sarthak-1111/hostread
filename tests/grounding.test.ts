@@ -41,6 +41,26 @@ Best,
   });
 });
 
+describe("checkGrounding — real model output patterns", () => {
+  const always = ["Dispatch at Dawn", "Marginalia Book Club", "Clearpath Languages", "Quillstack Notes"];
+  it("accepts contractions, greetings, possessives and brand-name fragments", () => {
+    const text = `Hi Marginalia Partnerships Team,
+
+I’m the host of Dispatch at Dawn. I’ve noticed Dawn’s listeners love *The Velvet Harbor* and **June Hartley**.
+Give Quillstack Notes a try. Clearpath’s community overlaps with ours: *Lantern Machines* or the lyrical vibe of *June Hartley*.`;
+    const r = checkGrounding(text, [...allowed, "Lantern Machines"], always);
+    expect(r.offenders).toEqual([]);
+  });
+  it("still catches a product claim the data didn't support", () => {
+    const r = checkGrounding("Our listeners want to learn Spanish with Clearpath Languages.", allowed, always);
+    expect(r.offenders).toEqual(["Spanish"]);
+  });
+  it("reports only the unknown part of a joined phrase", () => {
+    const r = checkGrounding("They love Marginalia Book Club and Taylor Swift.", allowed, always);
+    expect(r.offenders).toEqual(["Taylor Swift"]);
+  });
+});
+
 describe("extractReferences", () => {
   it("captures multi-word capitalised phrases with connectors", () => {
     expect(extractReferences("we went to the Isle of Venn last year")).toContain("Isle of Venn");
