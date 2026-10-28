@@ -89,8 +89,19 @@ interface Boxed {
   e: number;
 }
 
+// Next.js patches global fetch for its data cache, and Blobs requests sent
+// through the patched fetch hang inside Netlify's Next.js runtime. Use the
+// unpatched fetch that runtime keeps, as @netlify/plugin-nextjs does for its
+// own stores; otherwise Next's original fetch, opted out of the data cache.
+function unpatchedFetch(): typeof fetch {
+  const kept = (globalThis as Record<symbol, unknown>)[Symbol.for("nf-not-patched-fetch")] as typeof fetch | undefined;
+  if (kept) return kept;
+  const base = (globalThis.fetch as typeof fetch & { _nextOriginalFetch?: typeof fetch })._nextOriginalFetch ?? globalThis.fetch;
+  return (input, init) => base(input, { ...init, next: { ...(init as { next?: object } | undefined)?.next, internal: true } } as RequestInit);
+}
+
 let blobStore: ReturnType<typeof getStore> | undefined;
-const blobs = () => (blobStore ??= getStore({ name: "hostread", consistency: "strong" }));
+const blobs = () => (blobStore ??= getStore({ name: "hostread", consistency: "strong", fetch: unpatchedFetch() }));
 
 async function blobGet(key: string): Promise<Boxed | undefined> {
   const b = (await blobs().get(key, { type: "json" })) as Boxed | null;
@@ -127,11 +138,32 @@ const blobStoreShared: SharedStore = {
   },
 };
 
+// A stuck store request must fail (and fall back) rather than hold the request
+// until the platform kills the function.
+const STORE_TIMEOUT_MS = 8000;
+function timed<T>(p: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("shared store timed out")), STORE_TIMEOUT_MS);
+  });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+}
+
+const withTimeouts = (s: SharedStore): SharedStore => ({
+  get: (k) => timed(s.get(k)),
+  set: (k, v, t) => timed(s.set(k, v, t)),
+  create: (k, v, t) => timed(s.create(k, v, t)),
+  del: (k) => timed(s.del(k)),
+  incr: (k, t) => timed(s.incr(k, t)),
+});
+const timedBlobs = withTimeouts(blobStoreShared);
+const timedKv = withTimeouts(kvStore);
+
 function shared(): SharedStore | undefined {
   const b = config.cache.backend;
-  if (b === "blobs") return blobStoreShared;
+  if (b === "blobs") return timedBlobs;
   if (b === "memory") return undefined;
-  return config.cache.kvUrl && config.cache.kvToken ? kvStore : undefined;
+  return config.cache.kvUrl && config.cache.kvToken ? timedKv : undefined;
 }
 
 export const hasSharedStore = () => shared() !== undefined;
