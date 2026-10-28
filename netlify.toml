@@ -8,3 +8,8 @@
 [build.environment]
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
+
+# Next.js runtime (server rendering + API routes as functions). Declared
+# explicitly because upload-based deploys don't auto-install it.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
