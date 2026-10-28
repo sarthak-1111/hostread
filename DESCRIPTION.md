@@ -86,5 +86,5 @@ Qloo Insights API (Taste Analysis) and Search, Next.js, React, TypeScript, Tailw
 
 ## Links
 
-- Live demo: _added at deploy_
+- Live demo: https://hostread.vercel.app
 - Code (MIT): https://github.com/sarthak-1111/hostread

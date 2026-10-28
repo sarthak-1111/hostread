@@ -4,7 +4,7 @@
 
 HostRead is an agentic tool for independent podcasters and small networks without an ad-sales team. Type a show's name; an LLM agent uses the [Qloo](https://www.qloo.com) taste graph to map what that show's listeners love across film, TV, music, dining, books and places, finds the brands those listeners over-index on, checks how much each brand's fans share the same tastes, and returns a ranked **sponsor deck** — with the evidence, a pitch email and a 45–60 second host-read ad script for each brand.
 
-- **Live demo:** _link added at deploy_
+- **Live demo:** https://hostread.vercel.app (synthetic sample data until the Qloo API key is connected)
 - **Built for:** the [Qloo Agentic Hackathon](https://qloo.devpost.com) (Oct 2026)
 - **Licence:** MIT
 
