@@ -71,7 +71,7 @@ export const config = {
 } as const;
 
 /** Bump to invalidate cached runs after scoring / prompt changes. */
-export const RUN_VERSION = "v4";
+export const RUN_VERSION = "v5";
 
 export function llmLabel(): string {
   // The hosted demo sets LLM_LABEL so the page doesn't advertise the endpoint host.

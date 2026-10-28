@@ -2,7 +2,7 @@
 // guardrails (max steps, API-call budget, run timeout, retries, concurrency
 // caps) and followed by grounded pitch writing.
 import { config, dataMode, llmLabel } from "../config";
-import { DOMAINS } from "../domains";
+import { DOMAINS, PROFILE_DOMAINS } from "../domains";
 import { checkGrounding } from "../grounding";
 import { LlmClient, LlmUnavailableError, type ChatMessage } from "../llm/client";
 import { QlooError, TasteClient } from "../qloo/client";
@@ -11,7 +11,7 @@ import { baselineGuess } from "./baseline";
 import { newState, skippedStep, traced, type RunContext } from "./context";
 import { loadCandidates, loadDemographics, loadGeography, loadProfile, resolvePodcast, setPodcast } from "./stages";
 import { TOOL_SPECS, runTool, toolRank } from "./tools";
-import { stripEmphasis, writePitch } from "./writer";
+import { honestTasteClaims, stripEmphasis, writePitch } from "./writer";
 
 export interface RunInput {
   podcastId?: string;
@@ -90,7 +90,7 @@ export async function executeRun(input: RunInput, emit: (e: RunEvent) => void, s
       llm: llmLabel(),
       createdAt: new Date().toISOString(),
       podcast: s.podcast!,
-      profile: [...s.profile.entries()].map(([domain, entities]) => ({ domain, entities })),
+      profile: PROFILE_DOMAINS.filter((d) => s.profile.has(d)).map((domain) => ({ domain, entities: s.profile.get(domain)! })),
       demographics: s.demographics ?? null,
       geography: s.geography ?? null,
       deck: s.deck ?? [],
@@ -285,7 +285,7 @@ function finishSummary(ctx: RunContext) {
       (surprises ? `, and ${surprises} of the ${deck.length} picks are surprise fits a plain LLM didn't suggest.` : ".");
   }
   if (s.agentSummary) {
-    s.agentSummary = stripEmphasis(s.agentSummary).replace(/\s+/g, " ").trim();
+    s.agentSummary = honestTasteClaims(stripEmphasis(s.agentSummary)).replace(/\s+/g, " ").trim();
     ctx.emit({ type: "summary", text: s.agentSummary });
   }
 }

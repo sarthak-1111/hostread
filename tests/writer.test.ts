@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSections, templatePitch, allowedReferences, stripEmphasis, writePitch } from "@/lib/agent/writer";
+import { parseSections, templatePitch, allowedReferences, stripEmphasis, honestTasteClaims, writePitch } from "@/lib/agent/writer";
 import { parseBrandList } from "@/lib/agent/baseline";
 import { checkGrounding } from "@/lib/grounding";
 import type { LlmClient } from "@/lib/llm/client";
@@ -88,5 +88,13 @@ describe("stripEmphasis", () => {
     expect(stripEmphasis("moody content — favoring films")).toBe("moody content, favoring films");
     expect(stripEmphasis("a 2–3 sentence read")).toBe("a 2–3 sentence read");
     expect(stripEmphasis("ends with a dash—.")).toBe("ends with a dash.");
+  });
+});
+
+describe("honestTasteClaims", () => {
+  it("rewrites what listeners 'mention' to what they love, leaving other uses alone", () => {
+    expect(honestTasteClaims("Listeners of Crime Junkie consistently mention Big Time Adolescence.")).toBe("Listeners of Crime Junkie love Big Time Adolescence.");
+    expect(honestTasteClaims("Our audience talks about Hardy a lot.")).toBe("Our audience love Hardy a lot.");
+    expect(honestTasteClaims("three host-read spots that mention Loopycases")).toBe("three host-read spots that mention Loopycases");
   });
 });

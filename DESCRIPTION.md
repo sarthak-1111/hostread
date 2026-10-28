@@ -58,10 +58,10 @@ What the LLM is **not** allowed to do is just as important:
 ## How we built it
 
 - **Next.js 15 + TypeScript** web app with server-side API routes. A run is a job whose trace events go to a job log; on Vercel the request that starts the run streams those events back as NDJSON inside one 300-second function, and other hosts poll the log or hand the job to a background function.
-- **One data-access module** for Qloo (`TasteClient`), with a runtime cache (memory, optional Upstash Redis) and request de-duplication, so repeat demos are instant. Raw API payloads are never stored or committed.
+- **One data-access module** for Qloo (`TasteClient`), with a runtime cache (memory, optional Upstash Redis), request de-duplication and a private Vercel Blob archive of finished decks, so repeat demos are instant. Raw API payloads are never stored or committed.
 - **LLM-agnostic agent loop** over the OpenAI chat-completions API: we developed against `gpt-oss:120b` on a local Ollama server and deploy against a hosted endpoint by changing three env vars.
 - **Deterministic scoring and grounding** with unit tests.
-- **Per-IP rate limits and a daily global cap** so the hosted demo stays up for every judge; cached decks never count.
+- **Per-IP rate limits, a daily cap and a Qloo quota guard** so the hosted demo stays up for every judge; cached decks never count.
 - **Tailwind CSS** UI on the `tom-modern` style from Open Design (Geist type, a neutral canvas, one vermillion accent, sharp corners, hard shadows), reviewed against the Vercel Web Interface Guidelines and checked in Playwright on desktop, phone and dark mode. The media kit has a print stylesheet.
 
 ## Challenges we ran into
@@ -69,6 +69,11 @@ What the LLM is **not** allowed to do is just as important:
 - **Making an open-weights model a reliable agent.** Ollama occasionally returns HTTP 500 "error parsing tool call" for gpt-oss. The client retries, then switches to a text tool mode where the model writes the call as JSON and our code parses it.
 - **Grounding without false alarms.** A naive proper-noun check flags "I'm", "Hi Partnerships Team" and possessives. We built a reference extractor that understands sentence starts, contractions, possessives, show and brand names, and joined phrases, so it catches an invented "Taylor Swift" or "Spanish" but not ordinary English.
 - **Building before the key arrived.** We built the whole product against clearly labelled synthetic fixtures behind the same client interface, then switched to live data with a config change.
+- **Real data broke our first overlap measure.** Comparing the listeners' top 40 films, shows, artists and books with each brand's fans' top 40 found almost nothing in common (overlaps of 0.00 to 0.04), so every score came from food brands. We now ask Qloo how much each brand's fans like the listeners' own top 20 favourites (`filter.results.entities`) and compare the two sets of affinities with a weighted Jaccard. Same number of calls, dense signal, and the evidence chips became films, shows and artists both audiences actually share.
+- **Geography without place names.** The heatmap needs a location, and its city boundary returned about 16,000 cities with outline polygons (around 360 MB) for one show. Geohash cells come back in 2 seconds but carry only coordinates, so code groups them under the nearest US metro. Crime Junkie, made in Indianapolis, comes out Indianapolis first.
+- **Dining was local.** Place results without a location cluster around one city, which is weak evidence for a national show, so "dining" became food and drink brands.
+- **Keeping the model honest about the data.** Even when told not to, the model wrote that listeners "mention" things. Qloo measures affinity, not mentions, so code rewrites those claims to "love", and only shared favourites are attributed to a brand's fans.
+- **A quota every server sees.** The key allows 50,000 calls a month and a fresh run makes about 60. Serverless instances don't share counters, so the app reads Qloo's own remaining-quota header and stops fresh runs before the reserve; cached decks keep working.
 - **Honest comparison.** The baseline only sees the show's name and topic, and when it is unavailable no brand gets a surprise bonus — we never claim a surprise we can't show.
 
 ## What's next

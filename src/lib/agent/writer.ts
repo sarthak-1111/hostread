@@ -96,6 +96,17 @@ export function stripEmphasis(s: string): string {
     .replace(/,\s*([,.;:!?])/g, "$1");
 }
 
+/**
+ * Taste data says what audiences love, not what they say or do. The model still
+ * writes "listeners consistently mention X", so rewrite that claim to "love".
+ */
+export function honestTasteClaims(s: string): string {
+  return s.replace(
+    /\b((?:listeners|audience|fans|followers|community)\b[^.!?\n]{0,40}?)\b(?:(?:consistently|frequently|often|regularly|always|constantly)\s+)?(?:mentions?|mentioned|talks? about|talked about|searche?s? for|searched for|raves? about|raved about)\b/gi,
+    "$1love",
+  );
+}
+
 export function parseSections(text: string): { subject: string; email: string; adScript: string } | null {
   const grab = (name: string) => {
     const re = new RegExp(`#{2,4}\\s*${name}\\s*\\n([\\s\\S]*?)(?=\\n#{2,4}\\s*(SUBJECT|EMAIL|AD SCRIPT)\\b|$)`, "i");
@@ -150,8 +161,8 @@ export async function writePitch(llm: LlmClient | null, input: WriterInput, sign
       const gs = checkGrounding(parts.subject, allowed, always);
       return {
         subject: gs.ok ? stripEmphasis(parts.subject) : templateSubject(input),
-        email: stripEmphasis(parts.email),
-        adScript: stripEmphasis(parts.adScript),
+        email: honestTasteClaims(stripEmphasis(parts.email)),
+        adScript: honestTasteClaims(stripEmphasis(parts.adScript)),
         references: [...new Set([...g.cited, ...(gs.ok ? gs.cited : [])])],
         source: "llm",
         attempts: attempt,

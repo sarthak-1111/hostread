@@ -8,11 +8,7 @@ function median(xs: number[]): number | undefined {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
-const ordinal = (n: number) => {
-  const v = n % 100;
-  const suffix = v >= 11 && v <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
-  return `${n}${suffix}`;
-};
+const aff = (x: number) => x.toFixed(2);
 
 export function ObviousVsSurprising({ baseline, deck }: { baseline?: BaselineResult; deck: SponsorCard[] }) {
   if (!baseline) {
@@ -28,7 +24,9 @@ export function ObviousVsSurprising({ baseline, deck }: { baseline?: BaselineRes
   }
   const surprises = deck.filter((c) => c.surpriseFit).length;
   const matched = baseline.picks.filter((p) => p.matched).length;
-  const llmPct = median(baseline.picks.map((p) => p.percentile).filter((x): x is number => x !== undefined));
+  // Raw Qloo affinity for this audience (0–1), the same measure on both sides.
+  const llmAff = median(baseline.picks.map((p) => p.affinity).filter((x): x is number => x !== undefined));
+  const deckAff = median(deck.map((c) => c.score.rawAffinity).filter((x): x is number => x !== undefined));
 
   return (
     <section aria-labelledby="ovs" className="frame">
@@ -42,10 +40,10 @@ export function ObviousVsSurprising({ baseline, deck }: { baseline?: BaselineRes
             <Stat value={`${surprises} of ${deck.length}`} label="Taste-grounded picks the plain LLM missed" accent />
             <Stat value={`${matched} of ${baseline.picks.length}`} label="LLM guesses found in the taste graph" />
             <Stat
-              value={llmPct !== undefined ? ordinal(Math.round(llmPct * 100)) : "None"}
+              value={llmAff !== undefined && deckAff !== undefined ? `${aff(llmAff)} vs ${aff(deckAff)}` : "None"}
               label={
-                llmPct !== undefined
-                  ? "Median affinity percentile of the LLM's matched guesses among this show's candidate brands"
+                llmAff !== undefined && deckAff !== undefined
+                  ? "Median Qloo affinity with these listeners: the LLM's guesses vs. HostRead's picks (0 to 1)"
                   : "LLM guesses with measurable listener affinity"
               }
             />
@@ -72,8 +70,8 @@ export function ObviousVsSurprising({ baseline, deck }: { baseline?: BaselineRes
                       <span className="inline-flex items-center gap-1 text-success-text">
                         <Check className="size-3" aria-hidden="true" /> Also in deck
                       </span>
-                    ) : p.percentile !== undefined ? (
-                      `${ordinal(Math.round(p.percentile * 100))} pct. affinity`
+                    ) : p.affinity !== undefined ? (
+                      <span className="font-mono">affinity {aff(p.affinity)}</span>
                     ) : p.matched ? (
                       "No affinity signal"
                     ) : (
@@ -100,7 +98,9 @@ export function ObviousVsSurprising({ baseline, deck }: { baseline?: BaselineRes
                       </span>
                     )}
                   </span>
-                  <span className="shrink-0 font-mono text-label text-muted tabular">fit {c.fit}</span>
+                  <span className="shrink-0 font-mono text-label text-muted tabular">
+                    {c.score.rawAffinity !== undefined ? `affinity ${aff(c.score.rawAffinity)} · ` : ""}fit {c.fit}
+                  </span>
                 </li>
               ))}
             </ol>
