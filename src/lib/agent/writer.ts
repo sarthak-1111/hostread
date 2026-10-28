@@ -57,7 +57,8 @@ function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
   const system =
     "You write sponsorship materials for independent podcast hosts. GROUNDING RULE: the only cultural references you may mention " +
     "(films, TV shows, artists, books, restaurants, places, podcasts, celebrities) are the ones in ALLOWED REFERENCES — copy their names exactly. " +
-    "Never mention any other title, artist, celebrity, place or brand. Never invent statistics, download numbers, prices, product features or personal anecdotes — " +
+    "Never mention any other title, artist, celebrity, place or brand. Never invent statistics, download numbers, growth or ranking claims (e.g. 'fast-growing', 'top-rated'), " +
+    "prices, product features or personal anecdotes — " +
     "the host adds their own experience later. Use the placeholders [Host Name], [URL] and [PROMO CODE], and the line [personal experience] where the host " +
     "will add a sentence about using the product. Plain text: no markdown emphasis.";
   const user =
@@ -78,6 +79,11 @@ function buildPrompt(input: WriterInput, allowed: string[], feedback?: string) {
     `and ends with [URL] and [PROMO CODE].\n` +
     (feedback ? `\nIMPORTANT — fix this in your rewrite: ${feedback}\n` : "");
   return { system, user };
+}
+
+/** Drop markdown emphasis markers the model sometimes adds (*Title*, **bold**, _x_). */
+export function stripEmphasis(s: string): string {
+  return s.replace(/\*{1,3}([^*\n]+?)\*{1,3}/g, "$1").replace(/(^|\s)_([^_\n]+?)_(?=\s|[.,!?;:]|$)/g, "$1$2");
 }
 
 export function parseSections(text: string): { subject: string; email: string; adScript: string } | null {
@@ -129,7 +135,17 @@ export async function writePitch(llm: LlmClient | null, input: WriterInput, sign
         feedback = `The ad script was ${words} words (~${readSeconds(words)} s); it must be 120–150 words so it reads in 45–60 seconds.`;
         continue;
       }
-      return { ...parts, references: g.cited, source: "llm", attempts: attempt, adWords: words, adSeconds: readSeconds(words), rejected: rejected.length ? [...new Set(rejected)] : undefined };
+      return {
+        subject: stripEmphasis(parts.subject),
+        email: stripEmphasis(parts.email),
+        adScript: stripEmphasis(parts.adScript),
+        references: g.cited,
+        source: "llm",
+        attempts: attempt,
+        adWords: words,
+        adSeconds: readSeconds(words),
+        rejected: rejected.length ? [...new Set(rejected)] : undefined,
+      };
     }
   }
   return templatePitch(input, rejected);

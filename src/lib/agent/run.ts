@@ -12,7 +12,7 @@ import { baselineGuess } from "./baseline";
 import { newState, skippedStep, traced, type RunContext } from "./context";
 import { loadCandidates, loadDemographics, loadGeography, loadProfile, resolvePodcast, setPodcast } from "./stages";
 import { TOOL_SPECS, runTool, toolRank } from "./tools";
-import { writePitch } from "./writer";
+import { stripEmphasis, writePitch } from "./writer";
 
 export interface RunInput {
   podcastId?: string;
@@ -280,7 +280,10 @@ function finishSummary(ctx: RunContext) {
       (top ? `The strongest sponsor fit is ${top.brand.name} (fit ${top.fit})` : "") +
       (surprises ? `, and ${surprises} of the ${deck.length} picks are surprise fits a plain LLM didn't suggest.` : ".");
   }
-  if (s.agentSummary) ctx.emit({ type: "summary", text: s.agentSummary });
+  if (s.agentSummary) {
+    s.agentSummary = stripEmphasis(s.agentSummary).replace(/\s+/g, " ").trim();
+    ctx.emit({ type: "summary", text: s.agentSummary });
+  }
 }
 
 async function writeTopPitches(ctx: RunContext) {
