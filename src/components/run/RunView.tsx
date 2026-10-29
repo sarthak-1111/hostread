@@ -107,6 +107,34 @@ function RunStatus({ state, traceOpen, onTrace }: { state: RunUiState; traceOpen
   );
 }
 
+/** The agent's summary, clamped to three lines so the first card stays near the top. */
+function AgentRead({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > 240;
+  return (
+    <div className="panel rise p-5 sm:p-6">
+      <h2 className="eyebrow flex items-center gap-2">
+        <Bot className="size-4" strokeWidth={2} aria-hidden="true" /> The agent&apos;s read on this audience
+      </h2>
+      <p id="agent-read" className={`mt-3 max-w-[62ch] text-[17px] leading-relaxed text-fg sm:text-[19px] ${long && !open ? "line-clamp-3" : ""}`}>
+        {text}
+      </p>
+      {long && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls="agent-read"
+          className="mt-2 inline-flex min-h-9 items-center gap-1 font-mono text-[12px] font-bold uppercase tracking-[0.08em] text-muted transition-colors duration-150 hover:text-fg"
+        >
+          {open ? "Show less" : "Read all"}
+          <ChevronDown className={`size-3.5 transition-transform duration-150 ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 const LEGEND: { tag: string; cls: string; text: string }[] = [
   { tag: "tool", cls: "", text: "A Qloo-backed tool the agent chose to call, with its stated reason." },
   { tag: "LLM", cls: "", text: "The model planning, or writing the summary and pitches." },
@@ -391,14 +419,7 @@ function Deck({ state, props, setPitch }: { state: RunUiState; props: RunViewPro
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
       <section aria-labelledby="deck-h" className="min-w-0 space-y-4">
-        {state.summary && (
-          <div className="panel rise p-5 sm:p-6">
-            <h2 className="eyebrow flex items-center gap-2">
-              <Bot className="size-4" strokeWidth={2} aria-hidden="true" /> The agent&apos;s read on this audience
-            </h2>
-            <p className="mt-3 max-w-[62ch] text-[17px] leading-relaxed text-fg sm:text-[19px]">{state.summary}</p>
-          </div>
-        )}
+        {state.summary && <AgentRead text={state.summary} />}
         <h2 id="deck-h" className="sr-only">
           Ranked sponsors
         </h2>
