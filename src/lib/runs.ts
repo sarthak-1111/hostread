@@ -50,6 +50,11 @@ export function runKey(input: RunInput): string {
 const hasDeckArchive = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const deckPath = (key: string) => `decks/${key.replace(/:/g, "/")}.json`;
 const ARCHIVE_TIMEOUT_MS = 5000;
+// With an archive, it is the shared copy that on-demand pitches update. Memory is
+// per instance (and per function), so it only holds a deck briefly; otherwise other
+// instances would keep serving the deck as it was before a pitch was added.
+const ARCHIVED_MEMORY_TTL_SEC = 120;
+const memoryTtl = () => (hasDeckArchive() ? ARCHIVED_MEMORY_TTL_SEC : config.cache.runTtlSec);
 
 async function readArchived<T extends { createdAt: string }>(key: string): Promise<T | undefined> {
   const res = await blobGet(deckPath(key), { access: "private", abortSignal: AbortSignal.timeout(ARCHIVE_TIMEOUT_MS) });
@@ -64,7 +69,7 @@ export async function getCachedResult<T extends { createdAt: string }>(key: stri
   const hit = await cacheGet<T>(key);
   if (hit || !hasDeckArchive()) return hit;
   const archived = await readArchived<T>(key).catch(() => undefined);
-  if (archived) await cacheSet(key, archived, config.cache.runTtlSec);
+  if (archived) await cacheSet(key, archived, memoryTtl());
   return archived;
 }
 
@@ -77,7 +82,7 @@ export function saveRun(key: string, result: RunResult): Promise<void> {
 }
 
 export async function saveResult(key: string, result: { createdAt: string }): Promise<void> {
-  await cacheSet(key, result, config.cache.runTtlSec);
+  await cacheSet(key, result, memoryTtl());
   if (!hasDeckArchive()) return;
   await blobPut(deckPath(key), JSON.stringify(result), {
     access: "private",
