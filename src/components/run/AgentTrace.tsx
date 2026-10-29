@@ -23,7 +23,20 @@ function fmtParams(p?: Record<string, unknown>) {
     .join("  ");
 }
 
-export function AgentTrace({ steps, running, cached, stats }: { steps: TraceStep[]; running: boolean; cached: boolean; stats?: { apiCalls: number; llmCalls: number; ms: number } }) {
+export function AgentTrace({
+  steps,
+  running,
+  cached,
+  stats,
+  embedded = false,
+}: {
+  steps: TraceStep[];
+  running: boolean;
+  cached: boolean;
+  stats?: { apiCalls: number; llmCalls: number; ms: number };
+  /** Shown in its own tab: always open, no collapse toggle. */
+  embedded?: boolean;
+}) {
   const listRef = useRef<HTMLOListElement>(null);
   const [openMobile, setOpenMobile] = useState(false);
   // On wide screens the list is always open, so the toggle is not a tab stop.
@@ -44,36 +57,49 @@ export function AgentTrace({ steps, running, cached, stats }: { steps: TraceStep
   const current = [...steps].reverse().find((s) => s.status === "running") ?? steps.at(-1);
   const apiCalls = stats?.apiCalls ?? steps.reduce((a, s) => a + (s.apiCalls ?? 0), 0);
 
-  return (
-    <section aria-label="Agent trace" className="frame">
-      <button
-        type="button"
-        onClick={() => setOpenMobile((o) => !o)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left lg:pointer-events-none"
-        tabIndex={desktop ? -1 : undefined}
-        aria-expanded={openMobile}
-      >
-        <div className="flex min-w-0 items-center gap-2.5">
-          {running ? (
-            <span className="on-air size-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-          ) : (
-            <CircleCheck className="size-4 shrink-0 text-success-text" aria-hidden="true" />
-          )}
-          <div className="min-w-0">
-            <div className="whitespace-nowrap font-display text-[17px] leading-tight">Agent trace</div>
-            <div className="truncate text-label text-muted lg:hidden" aria-live="polite">
-              {running ? (current?.title ?? "Starting…") : `${steps.length} steps`}
-            </div>
+  const headerInner = (
+    <>
+      <div className="flex min-w-0 items-center gap-2.5">
+        {running ? (
+          <span className="on-air size-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+        ) : (
+          <CircleCheck className="size-4 shrink-0 text-success-text" aria-hidden="true" />
+        )}
+        <div className="min-w-0">
+          <div className="whitespace-nowrap font-display text-[17px] leading-tight">Agent trace</div>
+          <div className={`truncate text-label text-muted ${embedded ? "" : "lg:hidden"}`} aria-live="polite">
+            {running ? (current?.title ?? "Starting…") : `${steps.length} steps`}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2 text-label text-muted">
-          <span className="font-mono tabular">{apiCalls} API calls</span>
-          {cached && <span className="tag tag-success">Cached</span>}
-          <ChevronDown className={`size-4 transition-transform duration-150 lg:hidden ${openMobile ? "rotate-180" : ""}`} aria-hidden="true" />
-        </div>
-      </button>
-      <div className={`${openMobile ? "block" : "hidden"} border-t border-border-soft lg:block`}>
-        <ol ref={listRef} className="max-h-[60vh] overflow-y-auto overscroll-contain px-2 py-2 lg:max-h-[calc(100dvh-240px)]">
+      </div>
+      <div className="flex shrink-0 items-center gap-2 text-label text-muted">
+        <span className="font-mono tabular">{apiCalls} API calls</span>
+        {cached && <span className="tag tag-success">Cached</span>}
+        {!embedded && <ChevronDown className={`size-4 transition-transform duration-150 lg:hidden ${openMobile ? "rotate-180" : ""}`} aria-hidden="true" />}
+      </div>
+    </>
+  );
+
+  return (
+    <section aria-label="Agent trace" className="frame">
+      {embedded ? (
+        <div className="flex w-full items-center justify-between gap-3 px-4 py-3.5">{headerInner}</div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpenMobile((o) => !o)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left lg:pointer-events-none"
+          tabIndex={desktop ? -1 : undefined}
+          aria-expanded={openMobile}
+        >
+          {headerInner}
+        </button>
+      )}
+      <div className={`${embedded || openMobile ? "block" : "hidden"} border-t border-border-soft lg:block`}>
+        <ol
+          ref={listRef}
+          className={`overflow-y-auto overscroll-contain px-2 py-2 ${embedded ? "max-h-[calc(100dvh-300px)] min-h-[320px]" : "max-h-[60vh] lg:max-h-[calc(100dvh-240px)]"}`}
+        >
           {steps.length === 0 && (
             <li className="flex items-center gap-2 px-2 py-3 text-sm text-muted">
               <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Connecting to the agent…

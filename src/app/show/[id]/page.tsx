@@ -24,6 +24,7 @@ export default async function ShowPage({ params, searchParams }: { params: Param
       name={one(sp.name)?.slice(0, 160)}
       exclude={parseExclusions(one(sp.x))}
       view={one(sp.view) === "kit" ? "kit" : undefined}
+      tab={one(sp.tab)}
       initialMode={dataMode()}
     />
   );

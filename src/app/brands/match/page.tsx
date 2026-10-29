@@ -20,5 +20,5 @@ export default async function BrandMatchPage({ searchParams }: { searchParams: S
   const id = one(sp.id)?.slice(0, 160);
   const q = one(sp.q)?.trim().slice(0, 80);
   if (!id && !q) redirect("/brands");
-  return <BrandMatchView id={id} name={one(sp.name)?.slice(0, 160)} q={id ? undefined : q} initialMode={dataMode()} />;
+  return <BrandMatchView id={id} name={one(sp.name)?.slice(0, 160)} q={id ? undefined : q} tab={one(sp.tab)} initialMode={dataMode()} />;
 }

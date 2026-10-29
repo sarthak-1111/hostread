@@ -19,5 +19,5 @@ export default async function RunPage({ searchParams }: { searchParams: Search }
   const sp = await searchParams;
   const q = one(sp.q)?.trim().slice(0, 160);
   if (!q) redirect("/");
-  return <RunView q={q} exclude={parseExclusions(one(sp.x))} view={one(sp.view) === "kit" ? "kit" : undefined} initialMode={dataMode()} />;
+  return <RunView q={q} exclude={parseExclusions(one(sp.x))} view={one(sp.view) === "kit" ? "kit" : undefined} tab={one(sp.tab)} initialMode={dataMode()} />;
 }

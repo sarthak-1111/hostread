@@ -3,12 +3,30 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Bot, Check, FileDown, Link2, Printer, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  Bot,
+  Calculator,
+  Check,
+  ChevronDown,
+  CircleCheck,
+  FileDown,
+  Link2,
+  LoaderCircle,
+  Printer,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  TriangleAlert,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { ModePill, SampleBanner, SiteFooter, SiteHeader } from "../chrome";
 import { EntityImage, EvidenceChip } from "../domain";
 import { HowWeScore } from "../HowWeScore";
 import { SafetyToggles } from "../SafetyToggles";
 import { showHref } from "../LaunchPanel";
+import { TabList, TabPanel, type TabItem } from "../Tabs";
 import { AgentTrace } from "./AgentTrace";
 import { AudienceSnapshot } from "./AudienceSnapshot";
 import { BrandCard } from "./BrandCard";
@@ -26,7 +44,100 @@ export interface RunViewProps {
   name?: string;
   exclude: SafetyCategory[];
   view?: "kit";
+  /** Tab named in the link (?tab=), if any. */
+  tab?: string;
   initialMode: "live" | "sample";
+}
+
+type TabKey = "sponsors" | "compare" | "audience" | "trace" | "scoring";
+const TAB_KEYS: TabKey[] = ["sponsors", "compare", "audience", "trace", "scoring"];
+const isTabKey = (v: unknown): v is TabKey => TAB_KEYS.includes(v as TabKey);
+
+/** Sponsor cards shown before "Show more". */
+const FIRST_CARDS = 3;
+
+/** This page's address with the media-kit view switched on. */
+function kitHref() {
+  const u = new URL(window.location.href);
+  u.searchParams.delete("tab");
+  u.searchParams.set("view", "kit");
+  return u.pathname + u.search;
+}
+
+function Pending({ text }: { text: string }) {
+  return (
+    <div className="frame flex items-center gap-2.5 p-5 text-[15px] text-fg-2">
+      <LoaderCircle className="size-4 shrink-0 animate-spin text-muted" aria-hidden="true" /> {text}
+    </div>
+  );
+}
+
+/** One line under the header: what the agent is doing now, or how the deck was built. */
+function RunStatus({ state, traceOpen, onTrace }: { state: RunUiState; traceOpen: boolean; onTrace: () => void }) {
+  const running = state.status === "running" || state.status === "connecting";
+  const current = [...state.steps].reverse().find((s) => s.status === "running") ?? state.steps.at(-1);
+  const stats = state.result?.stats;
+  const secs = stats ? Math.round(stats.ms / 1000) : 0;
+  let text: string;
+  if (state.status === "connecting") text = "Opening the deck…";
+  else if (running) text = state.deck ? `Deck scored. ${current?.title ?? "Writing pitches"}…` : `The agent is working: ${current?.title ?? "starting"}`;
+  else if (state.cached && state.result)
+    text = `Opened from cache, no new API calls. Built ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(state.result.createdAt))} in ${secs} s from ${stats?.apiCalls ?? 0} Qloo calls.`;
+  else text = `Built by the agent in ${secs} s: ${state.steps.length} steps, ${stats?.apiCalls ?? 0} Qloo calls, ${stats?.llmCalls ?? 0} LLM calls.`;
+  const phase = state.status === "connecting" ? "" : running ? (state.deck ? "Deck ready. Writing pitches." : "The agent is working.") : "The deck is complete.";
+  return (
+    <div className="no-print mt-6 flex flex-col gap-3 border border-border-soft bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-start gap-2.5 text-[14px] leading-snug sm:items-center">
+        {running ? (
+          <span className="on-air mt-1.5 size-2 shrink-0 rounded-full bg-accent sm:mt-0" aria-hidden="true" />
+        ) : (
+          <CircleCheck className="mt-px size-4 shrink-0 text-success-text sm:mt-0" aria-hidden="true" />
+        )}
+        <span className="min-w-0">{text}</span>
+        <span className="sr-only" aria-live="polite">
+          {phase}
+        </span>
+      </div>
+      {!traceOpen && state.status !== "connecting" && (
+        <button type="button" onClick={onTrace} className="btn btn-secondary btn-sm shrink-0 self-start sm:self-auto">
+          <Bot className="size-3.5" strokeWidth={2} aria-hidden="true" /> {running ? "Watch the agent live" : "See how the agent built it"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+const LEGEND: { tag: string; cls: string; text: string }[] = [
+  { tag: "tool", cls: "", text: "A Qloo-backed tool the agent chose to call, with its stated reason." },
+  { tag: "LLM", cls: "", text: "The model planning, or writing the summary and pitches." },
+  { tag: "code", cls: "", text: "Deterministic steps: scoring and the grounding check. No model involved." },
+  { tag: "guardrail", cls: "tag-warn", text: "The orchestrator stepping in: a limit, or finishing a plan the model left incomplete." },
+];
+
+function TraceLegend({ llm, fallbacks }: { llm?: string; fallbacks?: string[] }) {
+  return (
+    <aside className="space-y-4 lg:sticky lg:top-36 lg:self-start" aria-label="How to read the trace">
+      <div className="frame p-5">
+        <h2 className="font-display text-[19px] leading-snug">Reading the trace</h2>
+        <dl className="mt-4 space-y-3 text-[14px]">
+          {LEGEND.map((l) => (
+            <div key={l.tag}>
+              <dt>
+                <span className={`tag ${l.cls}`}>{l.tag}</span>
+              </dt>
+              <dd className="mt-1 leading-snug text-fg-2">{l.text}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      {llm && (
+        <p className="px-1 text-label text-muted">
+          Agent model: {llm}
+          {fallbacks?.length ? `. Fallbacks: ${fallbacks.join(", ")}` : ""}
+        </p>
+      )}
+    </aside>
+  );
 }
 
 export function RunView(props: RunViewProps) {
@@ -44,8 +155,29 @@ export function RunView(props: RunViewProps) {
     return qs.toString();
   }, [props.id, props.name, props.q, props.exclude, nonce]);
   const { state, setPitch } = useRun(query);
+  const router = useRouter();
   const mode = state.mode ?? props.initialMode;
   const title = state.podcast?.name ?? props.name ?? props.q ?? "Podcast";
+  const running = state.status === "running" || state.status === "connecting";
+
+  // A fresh run opens on the live trace, and the deck takes over once it is scored,
+  // unless the viewer picked a tab (or the link named one).
+  const [picked, setPicked] = useState<TabKey | null>(isTabKey(props.tab) ? props.tab : null);
+  const tab: TabKey = picked ?? (!state.deck && state.status === "running" && !state.cached ? "trace" : "sponsors");
+  const pick = (k: TabKey) => {
+    setPicked(k);
+    const u = new URL(window.location.href);
+    if (k === "sponsors") u.searchParams.delete("tab");
+    else u.searchParams.set("tab", k);
+    window.history.replaceState(window.history.state, "", u.pathname + u.search);
+  };
+  const tabs: TabItem<TabKey>[] = [
+    { key: "sponsors", label: "Sponsors", Icon: Trophy, badge: state.deck?.length || undefined },
+    { key: "compare", label: "Obvious vs. Surprising", short: "Surprises", Icon: Sparkles },
+    { key: "audience", label: "Audience", Icon: Users },
+    { key: "trace", label: "Agent trace", short: "Trace", Icon: Bot, live: running && !state.cached, badge: state.steps.length || undefined },
+    { key: "scoring", label: "How we score", short: "Scoring", Icon: Calculator },
+  ];
 
   if (props.view === "kit") return <MediaKit state={state} title={title} props={props} />;
 
@@ -78,35 +210,48 @@ export function RunView(props: RunViewProps) {
           </div>
         )}
 
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <div className="no-print lg:sticky lg:top-24 lg:self-start">
-            <AgentTrace steps={state.steps} running={state.status === "running" || state.status === "connecting"} cached={state.cached} stats={state.result?.stats} />
-            {state.llm && (
-              <p className="mt-2.5 px-1 text-label text-muted">
-                Agent model: {state.llm}
-                {state.result?.stats.fallbacks.length ? `. Fallbacks: ${state.result.stats.fallbacks.join(", ")}` : ""}
-              </p>
-            )}
-          </div>
+        {state.status !== "error" && <RunStatus state={state} traceOpen={tab === "trace"} onTrace={() => pick("trace")} />}
 
-          <div className="min-w-0 space-y-6">
-            {state.summary && (
-              <div className="panel rise p-5 sm:p-6">
-                <h2 className="eyebrow flex items-center gap-2">
-                  <Bot className="size-4" strokeWidth={2} aria-hidden="true" /> The agent&apos;s read on this audience
-                </h2>
-                <p className="mt-3 max-w-[62ch] text-[18px] leading-relaxed text-fg sm:text-[20px]">{state.summary}</p>
-              </div>
-            )}
+        <TabList id="deck" label="Deck sections" tabs={tabs} active={tab} onChange={pick} className="mt-6" />
 
-            <Deck state={state} props={props} setPitch={setPitch} />
-            {(state.deck || state.status === "done") && <ObviousVsSurprising baseline={state.baseline} deck={state.deck ?? []} />}
-            {(state.profile || state.status === "running") && (
+        <TabPanel id="deck" k="sponsors" active={tab} className="pt-6">
+          <Deck state={state} props={props} setPitch={setPitch} />
+        </TabPanel>
+
+        <TabPanel id="deck" k="compare" active={tab} className="pt-6">
+          {state.deck || state.status === "done" ? (
+            <ObviousVsSurprising baseline={state.baseline} deck={state.deck ?? []} />
+          ) : (
+            <Pending text="The comparison appears once the agent has scored the deck." />
+          )}
+        </TabPanel>
+
+        <TabPanel id="deck" k="audience" active={tab} className="space-y-4 pt-6">
+          {state.profile || running ? (
+            <>
               <AudienceSnapshot profile={state.profile} demographics={state.demographics} geography={state.geography} podcastName={state.podcast?.name} />
-            )}
-            <HowWeScore compact />
+              <div className="frame flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <p className="text-[15px] text-fg-2">Attach it to a pitch: the same profile as a one-page media kit, ready to print or save as PDF.</p>
+                <button type="button" disabled={state.status !== "done"} onClick={() => router.push(kitHref())} className={`${btn} shrink-0 disabled:opacity-50`}>
+                  <FileDown className="size-4" strokeWidth={1.75} aria-hidden="true" /> Open media kit
+                </button>
+              </div>
+            </>
+          ) : (
+            <Pending text="The audience profile appears once the agent has mapped the show's tastes." />
+          )}
+        </TabPanel>
+
+        <TabPanel id="deck" k="trace" active={tab} className="pt-6">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+            <AgentTrace embedded steps={state.steps} running={running} cached={state.cached} stats={state.result?.stats} />
+            <TraceLegend llm={state.llm} fallbacks={state.result?.stats.fallbacks} />
           </div>
-        </div>
+        </TabPanel>
+
+        <TabPanel id="deck" k="scoring" active={tab} className="pt-6">
+          <HowWeScore />
+        </TabPanel>
       </main>
       <SiteFooter />
     </>
@@ -129,11 +274,6 @@ function ShowHeader({ state, title, props, onRerun }: { state: RunUiState; title
     } catch {
       /* user cancelled */
     }
-  };
-  const kitHref = () => {
-    const u = new URL(window.location.href);
-    u.searchParams.set("view", "kit");
-    return u.pathname + u.search;
   };
   return (
     <div>
@@ -235,63 +375,125 @@ function Deck({ state, props, setPitch }: { state: RunUiState; props: RunViewPro
     }
   };
 
+  const [showAll, setShowAll] = useState(false);
+  const visible = deck ? (showAll ? deck : deck.slice(0, FIRST_CARDS)) : [];
+  const hidden = deck ? deck.length - visible.length : 0;
+  // Jump from the at-a-glance list to a card, revealing the rest of the deck if needed.
+  const jumpTo = (rank: number) => {
+    if (rank > FIRST_CARDS) setShowAll(true);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`sponsor-${rank}`);
+      el?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      el?.focus({ preventScroll: true });
+    });
+  };
+
   return (
-    <section aria-labelledby="deck-h">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 id="deck-h" className="font-display text-[30px] leading-tight sm:text-[34px]">
-            Ranked sponsors
-          </h2>
-          <p className="mt-1 text-sm text-muted">Fit scores are relative rankings within this deck, not revenue predictions.</p>
-        </div>
-        {state.filteredOut && state.filteredOut.length > 0 && (
-          <span className="text-[13px] text-muted" title={state.filteredOut.map((f) => `${f.name} (${f.category})`).join(", ")}>
-            <ShieldCheck className="mr-1 inline size-3.5" strokeWidth={1.75} aria-hidden="true" />
-            {state.filteredOut.length} brand{state.filteredOut.length === 1 ? "" : "s"} removed by brand safety
-          </span>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <section aria-labelledby="deck-h" className="min-w-0 space-y-4">
+        {state.summary && (
+          <div className="panel rise p-5 sm:p-6">
+            <h2 className="eyebrow flex items-center gap-2">
+              <Bot className="size-4" strokeWidth={2} aria-hidden="true" /> The agent&apos;s read on this audience
+            </h2>
+            <p className="mt-3 max-w-[62ch] text-[17px] leading-relaxed text-fg sm:text-[19px]">{state.summary}</p>
+          </div>
         )}
-      </div>
-      {err && <p role="alert" className="mb-3 border border-accent bg-accent-wash px-3 py-2 text-sm text-accent-text">{err}</p>}
-      {!deck ? (
-        running ? (
-          <div className="space-y-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="frame p-5 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="skeleton size-12" />
-                  <div className="flex-1 space-y-2">
-                    <div className="skeleton h-4 w-40" />
-                    <div className="skeleton h-3 w-24" />
+        <h2 id="deck-h" className="sr-only">
+          Ranked sponsors
+        </h2>
+        {err && <p role="alert" className="border border-accent bg-accent-wash px-3 py-2 text-sm text-accent-text">{err}</p>}
+        {!deck ? (
+          running ? (
+            <div className="space-y-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="frame p-5 sm:p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="skeleton size-12" />
+                    <div className="flex-1 space-y-2">
+                      <div className="skeleton h-4 w-40" />
+                      <div className="skeleton h-3 w-24" />
+                    </div>
+                    <div className="skeleton h-[84px] w-[84px]" />
                   </div>
-                  <div className="skeleton h-[84px] w-[84px]" />
+                  <div className="mt-4 flex gap-2">
+                    <div className="skeleton h-7 w-28" />
+                    <div className="skeleton h-7 w-32" />
+                    <div className="skeleton h-7 w-24" />
+                  </div>
                 </div>
-                <div className="mt-4 flex gap-2">
-                  <div className="skeleton h-7 w-28" />
-                  <div className="skeleton h-7 w-32" />
-                  <div className="skeleton h-7 w-24" />
-                </div>
+              ))}
+              <p className="text-center text-label text-muted">The agent is mapping tastes. Cards appear as soon as scoring finishes.</p>
+            </div>
+          ) : null
+        ) : deck.length === 0 ? (
+          <p className="frame p-5 text-sm text-fg-2">No brands could be ranked for this show. Try removing some brand-safety exclusions.</p>
+        ) : (
+          <>
+            {visible.map((card) => (
+              <div key={card.brand.id} id={`sponsor-${card.rank}`} tabIndex={-1} className="scroll-mt-36 focus-visible:outline-none">
+                <BrandCard
+                  card={card}
+                  pitch={state.pitches[card.brand.id]}
+                  pitchPending={running && card.rank <= 3}
+                  writing={!!writing[card.brand.id]}
+                  onWritePitch={() => write(card.brand.id, card.fit)}
+                />
               </div>
             ))}
-            <p className="text-center text-label text-muted">The agent is mapping tastes. Cards appear as soon as scoring finishes.</p>
-          </div>
-        ) : null
-      ) : deck.length === 0 ? (
-        <p className="frame p-5 text-sm text-fg-2">No brands could be ranked for this show. Try removing some brand-safety exclusions.</p>
-      ) : (
-        <div className="space-y-4">
-          {deck.map((card) => (
-            <BrandCard
-              key={card.brand.id}
-              card={card}
-              pitch={state.pitches[card.brand.id]}
-              pitchPending={running && card.rank <= 3}
-              writing={!!writing[card.brand.id]}
-              onWritePitch={() => write(card.brand.id, card.fit)}
-            />
-          ))}
+            {deck.length > FIRST_CARDS && (
+              <button type="button" onClick={() => setShowAll((s) => !s)} aria-expanded={showAll} className="btn btn-secondary w-full">
+                <ChevronDown className={`size-4 transition-transform duration-150 ${showAll ? "rotate-180" : ""}`} aria-hidden="true" />
+                {showAll ? `Show the top ${FIRST_CARDS} only` : `Show ${hidden} more sponsor${hidden === 1 ? "" : "s"}`}
+              </button>
+            )}
+          </>
+        )}
+      </section>
+
+      <aside className="hidden lg:sticky lg:top-36 lg:block lg:self-start" aria-label="Ranking at a glance">
+        <div className="frame p-5">
+          <h2 className="font-display text-[19px] leading-snug">At a glance</h2>
+          {deck?.length ? (
+            <ol className="mt-3 divide-y divide-border-soft">
+              {deck.map((c) => (
+                <li key={c.brand.id}>
+                  <button type="button" onClick={() => jumpTo(c.rank)} className="group flex w-full items-center gap-2.5 py-2 text-left">
+                    <span className="w-5 shrink-0 font-mono text-label text-muted tabular">{c.rank}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-[14px] font-medium group-hover:underline">{c.brand.name}</span>
+                        {c.surpriseFit && <Sparkles className="size-3 shrink-0 text-accent-text" strokeWidth={2.25} aria-label="Surprise fit" />}
+                      </span>
+                      <span className="mt-1 block h-1 bg-accent-track" aria-hidden="true">
+                        <span className="block h-full bg-accent" style={{ width: `${c.fit}%` }} />
+                      </span>
+                    </span>
+                    <span className="w-7 shrink-0 text-right font-mono text-[13px] font-semibold tabular">{c.fit}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <div className="mt-3 space-y-2.5" aria-hidden="true">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="skeleton h-6 w-full" />
+              ))}
+            </div>
+          )}
+          <p className="mt-3 border-t border-border-soft pt-3 text-label leading-relaxed text-muted">
+            <Sparkles className="mr-1 inline size-3 text-accent-text" strokeWidth={2.25} aria-hidden="true" />
+            Surprise fit: a plain LLM didn&apos;t suggest it. Fit is a relative ranking within this deck, not a revenue prediction.
+          </p>
+          {state.filteredOut && state.filteredOut.length > 0 && (
+            <p className="mt-2 text-label text-muted" title={state.filteredOut.map((f) => `${f.name} (${f.category})`).join(", ")}>
+              <ShieldCheck className="mr-1 inline size-3.5" strokeWidth={1.75} aria-hidden="true" />
+              {state.filteredOut.length} brand{state.filteredOut.length === 1 ? "" : "s"} removed by brand safety
+            </p>
+          )}
         </div>
-      )}
-    </section>
+      </aside>
+    </div>
   );
 }
 
