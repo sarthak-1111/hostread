@@ -12,7 +12,7 @@ It also runs the other way round: a brand enters its name and gets the **podcast
 
 | | |
 |---|---|
-| ![Sponsor deck: the agent trace, the agent's read on the audience and the top-ranked sponsor](docs/01-deck.png) | ![Pitch email for the top sponsor, citing favourites both audiences share](docs/02-pitch.png) |
+| ![Sponsor deck: tabs for sponsors, comparison, audience, trace and scoring; the agent's read, the top-ranked sponsor and an at-a-glance ranking](docs/01-deck.png) | ![Pitch email for the top sponsor, citing favourites both audiences share](docs/02-pitch.png) |
 | ![Obvious vs. Surprising: a plain LLM's guesses next to the taste-grounded picks](docs/03-obvious-vs-surprising.png) | ![One-page audience media kit](docs/04-media-kit.png) |
 
 ![Brand-side mode: the podcasts whose listeners love Patagonia, with the tastes both audiences share](docs/05-brand-match.png)
