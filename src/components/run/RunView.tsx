@@ -216,7 +216,14 @@ function Deck({ state, props, setPitch }: { state: RunUiState; props: RunViewPro
       const res = await fetch("/api/pitch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ podcastId: state.podcast.id, brandId, name: props.id ? props.name ?? state.podcast.name : undefined, x: props.exclude.join(","), fit }),
+        body: JSON.stringify({
+          podcastId: state.podcast.id,
+          brandId,
+          name: props.id ? props.name ?? state.podcast.name : undefined,
+          q: props.id ? undefined : props.q,
+          x: props.exclude.join(","),
+          fit,
+        }),
       });
       const json = (await res.json()) as { pitch?: PitchPack; error?: string };
       if (json.pitch) setPitch(brandId, json.pitch);

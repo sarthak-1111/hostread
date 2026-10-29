@@ -13,7 +13,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "probe": "node --env-file=.env.local scripts/probe.mjs"
+    "probe": "node --env-file=.env.local scripts/probe.mjs",
+    "health": "node scripts/health.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "11.1.4",

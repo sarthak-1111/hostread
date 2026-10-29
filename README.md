@@ -138,6 +138,7 @@ npm run dev                  # http://localhost:3000
 npm test          # unit tests: scoring (both modes), brand-side pipeline on fixtures, grounding checker, writer
 npm run typecheck
 npm run probe     # API verification probe (needs QLOO_API_KEY); prints a summary only
+npm run health    # pre-demo check of a deployment: status, and every landing example cached (warms any that aren't)
 ```
 
 ### Environment variables

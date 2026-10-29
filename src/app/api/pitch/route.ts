@@ -25,6 +25,8 @@ const Body = z.object({
   podcastId: z.string().min(1).max(160),
   brandId: z.string().min(1).max(160),
   name: z.string().max(160).optional(),
+  /** Set when the deck came from a free-text run (/run?q=), which is cached under its query. */
+  q: z.string().max(160).optional(),
   x: z.string().max(200).optional(),
   /** Display-only: the card's fit from the deck the user is looking at. */
   fit: z.number().min(0).max(100).optional(),
@@ -33,9 +35,9 @@ const Body = z.object({
 export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Bad request" }, { status: 400 });
-  const { podcastId, brandId, name, x, fit } = parsed.data;
+  const { podcastId, brandId, name, q, x, fit } = parsed.data;
   const exclude = parseExclusions(x);
-  const key = runKey({ podcastId, nameHint: name, exclude });
+  const key = runKey(q ? { query: q, exclude } : { podcastId, nameHint: name, exclude });
   const cached = await getCachedRun(key);
   const cachedCard = cached?.deck.find((c) => c.brand.id === brandId);
   if (cachedCard?.pitch) return NextResponse.json({ pitch: cachedCard.pitch });
