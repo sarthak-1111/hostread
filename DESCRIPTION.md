@@ -1,4 +1,4 @@
-# HostRead — submission text
+# HostRead: submission text
 
 _Paste-ready for the Devpost form. Sections follow the form's usual order._
 
@@ -14,7 +14,7 @@ Dana is one of hundreds of thousands of active podcasts, and almost none of them
 
 Brands have the mirror-image problem: they buy the same handful of big shows because finding the small, loyal audiences that already love them is slow and manual.
 
-What both sides are missing is evidence about **taste**: not what a show is about, but what its listeners love — the films, artists, restaurants, books and places — and which brands' fans love the same things.
+What both sides are missing is evidence about **taste**: not what a show is about, but what its listeners love (the films, artists, restaurants, books and places), and which brands' fans love the same things.
 
 ## What it does
 
@@ -23,7 +23,7 @@ Dana types her show's name (with autocomplete) and watches HostRead's agent work
 1. Maps the show's audience across **film, TV, music, food & drink, books, places and other podcasts** using Qloo's taste graph.
 2. Pulls the **brands those listeners over-index on**, minus any categories the host excludes (alcohol, gambling, tobacco, cannabis, crypto, firearms, adult).
 3. Chooses which brands to investigate, profiles **each brand's fans** across the same domains, and measures how much the two taste profiles overlap.
-4. Scores every brand with a transparent, deterministic formula and returns a **ranked sponsor deck**. Each card shows the fit score, the evidence ("Listeners and this brand's fans both love: _a film_, _an artist_, _a restaurant_"), and buttons to copy a **pitch email** and a **45–60 second host-read ad script**.
+4. Scores every brand with a transparent, deterministic formula and returns a **ranked sponsor deck**. Each card shows the fit score, the evidence ("Listeners and this brand's fans both love: _a film_, _an artist_, _a restaurant_"), and buttons to copy a **pitch email** and a **45 to 60 second host-read ad script**.
 5. Shows an **Obvious vs. Surprising** panel: what a plain LLM guesses from the show's name and topic, next to the taste-grounded picks. Brands the LLM never thought of get a **Surprise fit** badge.
 6. Produces an **audience snapshot** that doubles as a one-page, print-ready **media kit**, and a shareable link to the deck.
 
@@ -37,22 +37,22 @@ The whole run streams live: you watch the agent choose tools, see each call's pa
 
 ## Why it needs Qloo
 
-The hackathon's rule is "if your submission would work the same without Qloo, you're building the wrong thing." HostRead makes that test visible in the product. A plain LLM only knows a show's topic, so it suggests the category defaults. HostRead's picks come from Qloo's cross-domain affinity data — which brands this audience actually over-indexes on, and which of those brands have fans with the same taste in film, TV, music, books and food & drink. The Obvious vs. Surprising panel puts the two side by side on every run and resolves the LLM's guesses back into Qloo to show how they score with this audience.
+The hackathon's rule is "if your submission would work the same without Qloo, you're building the wrong thing." HostRead makes that test visible in the product. A plain LLM only knows a show's topic, so it suggests the category defaults. HostRead's picks come from Qloo's cross-domain affinity data: which brands this audience actually over-indexes on, and which of those brands have fans with the same taste in film, TV, music, books and food & drink. The Obvious vs. Surprising panel puts the two side by side on every run and resolves the LLM's guesses back into Qloo to show how they score with this audience.
 
 Qloo powers every number and every reference on the page:
 
-- `/search` (podcast) — autocomplete and show resolution
-- `/v2/insights` with the show as signal — brand candidates with affinity, and the audience's taste across seven domains
-- `/v2/insights` with each brand as signal — the brand's fan profile, for the overlap and the evidence
-- `/v2/insights` with `filter.results.entities` — how the plain LLM's guesses actually score with this audience
-- `/v2/insights` demographics and heatmap — the age/gender skew and geography in the media kit
-- `/v2/insights` with a brand as signal and podcasts as the type, then each show as signal with `filter.results.entities` — brand-side mode
+- `/search` (podcast): autocomplete and show resolution
+- `/v2/insights` with the show as signal: brand candidates with affinity, and the audience's taste across seven domains
+- `/v2/insights` with each brand as signal: the brand's fan profile, for the overlap and the evidence
+- `/v2/insights` with `filter.results.entities`: how the plain LLM's guesses actually score with this audience
+- `/v2/insights` demographics and heatmap: the age/gender skew and geography in the media kit
+- `/v2/insights` with a brand as signal and podcasts as the type, then each show as signal with `filter.results.entities`: brand-side mode
 
 Remove Qloo and HostRead has no candidates, no evidence, no score and nothing it is allowed to cite.
 
 ## How the agent works
 
-HostRead is an agentic tool: an LLM in a tool-calling loop (any OpenAI-compatible endpoint) with eight tools — `resolve_podcast`, `audience_profile`, `brand_candidates`, `brand_fan_profile`, `overlap_evidence`, `demographics`, `geography` and `rank_sponsors`. The agent decides the order, which brands are worth a deep dive (varied categories, no near-duplicate sub-brands, plausible podcast sponsors), and writes a short read on the audience.
+HostRead is an agentic tool: an LLM in a tool-calling loop (any OpenAI-compatible endpoint) with eight tools: `resolve_podcast`, `audience_profile`, `brand_candidates`, `brand_fan_profile`, `overlap_evidence`, `demographics`, `geography` and `rank_sponsors`. The agent decides the order, which brands are worth a deep dive (varied categories, no near-duplicate sub-brands, plausible podcast sponsors), and writes a short read on the audience.
 
 What the LLM is **not** allowed to do is just as important:
 
@@ -81,7 +81,7 @@ What the LLM is **not** allowed to do is just as important:
 - **Dining was local.** Place results without a location cluster around one city, which is weak evidence for a national show, so "dining" became food and drink brands.
 - **Keeping the model honest about the data.** Even when told not to, the model wrote that listeners "mention" things. Qloo measures affinity, not mentions, so code rewrites those claims to "love", and only shared favourites are attributed to a brand's fans.
 - **A quota every server sees.** The key allows 50,000 calls a month and a fresh run makes about 60. Serverless instances don't share counters, so the app reads Qloo's own remaining-quota header and stops fresh runs before the reserve; cached decks keep working.
-- **Honest comparison.** The baseline only sees the show's name and topic, and when it is unavailable no brand gets a surprise bonus — we never claim a surprise we can't show.
+- **Honest comparison.** The baseline only sees the show's name and topic, and when it is unavailable no brand gets a surprise bonus, so we never claim a surprise we can't show.
 
 ## What's next
 
@@ -92,7 +92,7 @@ What the LLM is **not** allowed to do is just as important:
 
 ## Business model
 
-- **Free for independent shows:** a few decks a month, pitch emails and scripts included — the top of the funnel and the supply side of the marketplace.
+- **Free for independent shows:** a few decks a month, pitch emails and scripts included. This tier is the top of the funnel and the supply side of the marketplace.
 - **Paid tier for networks and agencies:** multi-show workspaces, saved decks, CRM export, white-label media kits and unlimited runs.
 - **Brand-side marketplace with a take rate:** brands discover small, high-fit shows (with the same evidence), book host-read campaigns through HostRead, and we take a percentage of each booking. The demo's brand-side mode is the discovery half of this today.
 
