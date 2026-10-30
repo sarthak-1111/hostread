@@ -2,7 +2,7 @@
 
 **Find the sponsors your listeners already love. Get the pitch written.**
 
-HostRead is an agentic tool for independent podcasters and small networks without an ad-sales team. Type a show's name; an LLM agent uses the [Qloo](https://www.qloo.com) taste graph to map what that show's listeners love across film, TV, music, food & drink, books and places, finds the brands those listeners over-index on, checks how much each brand's fans share the same tastes, and returns a ranked **sponsor deck** — with the evidence, a pitch email and a 45–60 second host-read ad script for each brand.
+HostRead is an agentic tool for independent podcasters and small networks without an ad-sales team. Type a show's name; an LLM agent uses the [Qloo](https://www.qloo.com) taste graph to map what that show's listeners love across film, TV, music, food & drink, books and places, finds the brands those listeners over-index on, checks how much each brand's fans share the same tastes, and returns a ranked **sponsor deck** with the evidence, a pitch email and a 45 to 60 second host-read ad script for each brand.
 
 It also runs the other way round: a brand enters its name and gets the **podcasts whose listeners already love it** ([/brands](https://hostread.vercel.app/brands)). An [MCP server](mcp/README.md) puts both in any agent's hands.
 
@@ -34,9 +34,9 @@ _Screenshots from the live demo with Qloo data: Crime Junkie's sponsor deck, and
 | **Brand-side mode** | A brand gets the podcasts whose listeners already love it, ranked by a second transparent formula, with the shared tastes as evidence, a template outreach note, and a link to each show's own sponsor deck. No LLM involved. |
 | **MCP server** | `search_podcasts`, `sponsor_deck`, `write_pitch`, `search_brands` and `podcasts_for_brand` for Claude Desktop, Claude Code or any MCP client ([mcp/](mcp/README.md)). |
 
-## How Qloo is used — and why an LLM alone can't do this
+## How Qloo is used, and why an LLM alone can't do this
 
-An LLM knows what a show is *about*. It does not know what that show's listeners do with the rest of their lives, which brands they over-index on, or which brands' fans share their taste. That is behavioural, cross-domain affinity data — exactly what Qloo's taste graph holds. Without it, “who should sponsor a true-crime show?” collapses into the same category-default answers for every show in the genre.
+An LLM knows what a show is *about*. It does not know what that show's listeners do with the rest of their lives, which brands they over-index on, or which brands' fans share their taste. That is behavioural, cross-domain affinity data, exactly what Qloo's taste graph holds. Without it, “who should sponsor a true-crime show?” collapses into the same category-default answers for every show in the genre.
 
 All calls go to `https://hackathon.api.qloo.com` from server-side code, with the key in the `X-Api-Key` header.
 
@@ -44,8 +44,8 @@ All calls go to `https://hackathon.api.qloo.com` from server-side code, with the
 |---|---|
 | `GET /search?types=urn:entity:podcast` | Autocomplete on the landing page; resolving a typed show name to a Qloo entity (the agent's `resolve_podcast` tool). |
 | `GET /v2/insights?filter.type=urn:entity:brand&signal.interests.entities=<show>` | **Candidate sponsors** ranked by affinity among the show's listeners → the **A** term of the fit score (`brand_candidates`). |
-| `GET /v2/insights?filter.type=urn:entity:{movie,tv_show,artist,book,destination,podcast}&signal.interests.entities=<show>` | The **audience taste profile** across domains (`audience_profile`) — the media kit, and the listeners' side of the overlap. Food & drink uses `urn:entity:brand` with `filter.tags=urn:tag:genre:brand:food_and_beverage` (place results cluster around one city; see [API_NOTES.md](API_NOTES.md)). |
-| `GET /v2/insights?filter.type=…&signal.interests.entities=<brand>&filter.results.entities=<listeners' top 20>` | How much each candidate brand's **fans** like the listeners' favourites (`brand_fan_profile`) — the other side of the overlap → the **O** term and the evidence chips. |
+| `GET /v2/insights?filter.type=urn:entity:{movie,tv_show,artist,book,destination,podcast}&signal.interests.entities=<show>` | The **audience taste profile** across domains (`audience_profile`): the media kit, and the listeners' side of the overlap. Food & drink uses `urn:entity:brand` with `filter.tags=urn:tag:genre:brand:food_and_beverage` (place results cluster around one city; see [API_NOTES.md](API_NOTES.md)). |
+| `GET /v2/insights?filter.type=…&signal.interests.entities=<brand>&filter.results.entities=<listeners' top 20>` | How much each candidate brand's **fans** like the listeners' favourites (`brand_fan_profile`): the other side of the overlap → the **O** term and the evidence chips. |
 | `GET /v2/insights?filter.type=urn:entity:brand&filter.results.entities=<ids>` | How the plain LLM's guessed brands actually score with this audience (Obvious vs. Surprising). |
 | `GET /search?types=urn:entity:brand` | Resolving the plain LLM's brand names to Qloo entities; brand autocomplete in brand-side mode. |
 | `GET /entities?entity_ids=<id>` | Opening a shared link: the show or brand by id. |
@@ -78,7 +78,7 @@ flowchart LR
 ```
 
 1. **Resolve** the show (autocomplete picks an id; free text goes through `resolve_podcast`).
-2. In parallel, a **plain-LLM baseline** guesses ten sponsors from the show's name and topic only — no taste data.
+2. In parallel, a **plain-LLM baseline** guesses ten sponsors from the show's name and topic only, with no taste data.
 3. The **agent** (an LLM in a tool-calling loop) calls `audience_profile`, `brand_candidates`, chooses which brands to investigate (varied categories, no near-duplicates, plausible podcast sponsors), calls `brand_fan_profile`, `overlap_evidence`, `demographics`, `geography`, then `rank_sponsors`, and writes a short read on the audience.
 4. **Scoring is code, not the LLM.** `rank_sponsors` resolves the baseline's brands against Qloo and computes the fit score.
 5. The **writer** drafts a pitch email and ad script for the top brands (others on demand). A checker extracts every proper-noun reference and rejects any entity the API didn't return in this run; the writer regenerates with feedback, and falls back to a deterministic template if needed.
@@ -95,9 +95,9 @@ flowchart LR
 Fit = 100 × (0.50·A + 0.35·O + 0.15·S)
 ```
 
-- **A — audience affinity:** Qloo's affinity of the brand among the show's listeners, min–max normalised across the candidate pool.
-- **O — taste overlap:** for the listeners' top 20 favourites in each of film, TV, music, books and food & drink, Qloo returns the listeners' affinity (wL) and, with the brand as the signal and `filter.results.entities`, the brand fans' affinity for the same items (wB). The weighted Jaccard `Σ min(wL, wB) / Σ max(wL, wB)` is averaged across domains and min–max normalised within the deck. An item counts as evidence when wB ≥ 0.75; the headline chips favour film, TV and music and the items this brand's fans like more than the deck's other brands do.
-- **S — surprise:** 1 if the plain-LLM baseline did not name the brand (fuzzy name match + entity match), else 0. If the baseline is unavailable, S = 0 for everyone.
+- **A, audience affinity:** Qloo's affinity of the brand among the show's listeners, min-max normalised across the candidate pool.
+- **O, taste overlap:** for the listeners' top 20 favourites in each of film, TV, music, books and food & drink, Qloo returns the listeners' affinity (wL) and, with the brand as the signal and `filter.results.entities`, the brand fans' affinity for the same items (wB). The weighted Jaccard `Σ min(wL, wB) / Σ max(wL, wB)` is averaged across domains and min-max normalised within the deck. An item counts as evidence when wB ≥ 0.75; the headline chips favour film, TV and music and the items this brand's fans like more than the deck's other brands do.
+- **S, surprise:** 1 if the plain-LLM baseline did not name the brand (fuzzy name match + entity match), else 0. If the baseline is unavailable, S = 0 for everyone.
 
 A fit score is a **relative ranking within one show's deck**, not a prediction of revenue, CPM or conversion. The UI says so wherever scores appear.
 
@@ -107,7 +107,7 @@ A fit score is a **relative ranking within one show's deck**, not a prediction o
 Fit = 100 × (0.60·A + 0.40·O)
 ```
 
-The same overlap check, run the other way round, with no LLM in the loop. Qloo returns 30 podcasts for the brand's fans; **A** is each podcast's affinity among them, min–max normalised. For the top 8, **O** compares the brand fans' top 20 favourites in film, TV, music, books and food & drink with each show's listeners' affinity for those items (`filter.results.entities`), using the same weighted Jaccard, normalised within the shortlist. An item is evidence when the listeners score it 0.75 or higher. A fresh match makes 47 Qloo calls and takes about 10 seconds; results are cached and archived like decks, and count against the same rate limits.
+The same overlap check, run the other way round, with no LLM in the loop. Qloo returns 30 podcasts for the brand's fans; **A** is each podcast's affinity among them, min-max normalised. For the top 8, **O** compares the brand fans' top 20 favourites in film, TV, music, books and food & drink with each show's listeners' affinity for those items (`filter.results.entities`), using the same weighted Jaccard, normalised within the shortlist. An item is evidence when the listeners score it 0.75 or higher. A fresh match makes 47 Qloo calls and takes about 10 seconds; results are cached and archived like decks, and count against the same rate limits.
 
 ## MCP server
 
@@ -146,24 +146,24 @@ npm run llm-url -- https://<name>.trycloudflare.com   # new LLM endpoint: checks
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `QLOO_API_KEY` | — | Qloo hackathon key. Server-side only. |
+| `QLOO_API_KEY` | none | Qloo hackathon key. Server-side only. |
 | `QLOO_MODE` | auto | `live`, `sample`, or unset (live if a key is present). |
 | `QLOO_BASE_URL` | `https://hackathon.api.qloo.com` | Qloo API host. |
 | `LLM_BASE_URL` | `http://localhost:11434/v1` | OpenAI-compatible base URL. |
 | `LLM_MODEL` | `gpt-oss:120b` | Model name at that endpoint. |
-| `LLM_API_KEY` | — | Bearer key for hosted endpoints. |
+| `LLM_API_KEY` | none | Bearer key for hosted endpoints. |
 | `LLM_MAX_CONCURRENCY` | `1` | Parallel LLM calls (1 for a local server). |
 | `LLM_REASONING_EFFORT` | `low` | Sent as `reasoning_effort`; empty to omit. |
 | `AGENT_MAX_STEPS`, `AGENT_MAX_API_CALLS`, `AGENT_RUN_TIMEOUT_MS` | 12, 80, 240000 | Agent guardrails. |
 | `RATE_RUNS_PER_IP_10MIN`, `RATE_RUNS_PER_IP_DAY`, `RATE_GLOBAL_RUNS_DAY` | 6, 25, 150 | Limits on fresh runs (cached runs are free). |
 | `QLOO_MONTHLY_RESERVE` | 2500 | Fresh runs stop when Qloo's `x-month-ratelimit-remaining` header drops below this (a run makes about 60 calls). |
 | `CACHE_RUN_TTL_SEC` | 1209600 | How long a finished deck stays cached (14 days). |
-| `LLM_LABEL` | — | Shown in the UI instead of `<model> @ <endpoint host>`. |
+| `LLM_LABEL` | none | Shown in the UI instead of `<model> @ <endpoint host>`. |
 | `RUN_EXECUTION` | `inline` | `stream` runs the job inside the start request and streams events back (Vercel); `inline` runs it in the server and the browser polls; `background` hands it to the Netlify background function. |
-| `JOB_SECRET` | — | Shared secret between `/api/run` and the background function (any long random string). |
+| `JOB_SECRET` | none | Shared secret between `/api/run` and the background function (any long random string). |
 | `CACHE_BACKEND` | auto | `memory`, `kv` or `blobs` (Netlify Blobs). Unset: `kv` when the KV vars are set, else `memory`. |
-| `BLOB_READ_WRITE_TOKEN` | — | Vercel Blob store for finished decks (set by `vercel blob create-store`), so cached decks survive across serverless instances. |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | — | Optional Upstash Redis, so the deck cache and rate limits are shared across serverless instances. |
+| `BLOB_READ_WRITE_TOKEN` | none | Vercel Blob store for finished decks (set by `vercel blob create-store`), so cached decks survive across serverless instances. |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | none | Optional Upstash Redis, so the deck cache and rate limits are shared across serverless instances. |
 
 ## Deploy (Vercel)
 
@@ -182,7 +182,7 @@ The hosted demo runs on Vercel's free Hobby plan. A run takes 60-100 s, and Hobb
 ## Data handling
 
 - The Qloo key and LLM key live only in server env vars; the browser never sees them.
-- Only public entity ids (shows, brands) are sent to Qloo — no personal data.
+- Only public entity ids (shows, brands) are sent to Qloo, never personal data.
 - Qloo responses are normalised to the few fields we use and cached at runtime; raw payloads are never stored or committed.
 - Results describe aggregate audiences, not individuals.
 

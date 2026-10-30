@@ -18,8 +18,8 @@ Podcast coverage is strong, so HostRead runs on podcasts as planned (no TV/film 
 | Per month | 50,000 requests (`x-month-ratelimit-limit`, `-remaining`, `-reset`); the window started at the first call |
 | `take` | default 20, maximum 50 |
 | `/search` latency | p50 ≈ 0.37 s, p90 ≈ 0.55 s |
-| `/v2/insights` latency | p50 ≈ 0.5–1.7 s, p90 ≈ 3.4 s; artist and movie queries are the slowest (≈ 3 s) |
-| Concurrency | 4 parallel requests, twice: all 200, 0.7–4.4 s, no 429s |
+| `/v2/insights` latency | p50 ≈ 0.5 to 1.7 s, p90 ≈ 3.4 s; artist and movie queries are the slowest (≈ 3 s) |
+| Concurrency | 4 parallel requests, twice: all 200, 0.7 to 4.4 s, no 429s |
 
 A fresh HostRead run makes about 60 Qloo calls, so the month allows roughly 800 fresh runs. The app reads `x-month-ratelimit-remaining` from every response and stops starting fresh runs below `QLOO_MONTHLY_RESERVE` (default 2,500); cached decks keep working.
 
@@ -31,7 +31,7 @@ A fresh HostRead run makes about 60 Qloo calls, so the month allows roughly 800 
 | Show by id | `GET /entities?entity_ids=…` | Works; used when a share link carries only the id. |
 | Audience taste per domain | `GET /v2/insights?filter.type=<type>&signal.interests.entities=<show>&take=40` | Types: `urn:entity:movie`, `tv_show`, `artist`, `book`, `destination`, `podcast` (with `filter.exclude.entities=<show>`). |
 | Brand candidates | `filter.type=urn:entity:brand`, `take=50` | Brand results add `type`, `subtype`, `properties.industry`, and tags (`urn:tag:genre:brand`, `brand_subtype`, `brand_type`, `lifestyle`, `aesthetic_property`, `competitor_brand`, `core_value`). We take the category from `properties.industry`, falling back to the subtype and genre tags. |
-| Brand fan profile | same insights call with the **brand** as the signal | Works for every domain. Comparing two top-40 lists turned out too sparse (film, TV, music and book overlaps were mostly 0.00–0.04), so HostRead asks for the brand fans' affinity for the listeners' top 20 items instead (`filter.results.entities`): one call per brand and domain, dense, and it separates brands (a show's own top brands scored its top films and artists at 0.76–0.87; a mismatched brand at 0.67–0.74). |
+| Brand fan profile | same insights call with the **brand** as the signal | Works for every domain. Comparing two top-40 lists turned out too sparse (film, TV, music and book overlaps were mostly 0.00 to 0.04), so HostRead asks for the brand fans' affinity for the listeners' top 20 items instead (`filter.results.entities`): one call per brand and domain, dense, and it separates brands (a show's own top brands scored its top films and artists at 0.76 to 0.87; a mismatched brand at 0.67 to 0.74). |
 | Affinity of named brands | `filter.results.entities=<ids>` | Returns exactly those brands with this audience's affinity; used to score the plain-LLM baseline's guesses. |
 | Age and gender | `filter.type=urn:demographics` | `results.demographics[0].query.age` (six buckets, `24_and_younger` … `55_and_older`) and `.gender` (`male`, `female`); values are skews in −1…1 with float noise, so the UI rounds. |
 | Geography | `filter.type=urn:heatmap`, `filter.location.query=United States`, `output.heatmap.boundary=urn:geohash` | See below. |

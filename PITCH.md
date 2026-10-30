@@ -1,4 +1,4 @@
-# HostRead — finalist pitch (Nov 5)
+# HostRead: finalist pitch (Nov 5)
 
 Audience: Jason Calacanis, Cedric the Entertainer, Alex Elias, plus investors watching live. Tell one host's story, show the product early, and save the market numbers for the zoom-out.
 
@@ -58,13 +58,13 @@ Fallbacks: if the network is slow, open the cached share link (instant). If the 
 ## 10 likely judge questions
 
 1. **"How big is the market?"**
-   US podcast advertising was about $2.9 billion in 2025 (IAB/PwC), and host-read ads are roughly half of podcast ad spend by Magellan AI's benchmark. The long tail — hundreds of thousands of active shows — is mostly unsold. We start where the pain is sharpest: shows with real audiences and no sales team.
+   US podcast advertising was about $2.9 billion in 2025 (IAB/PwC), and host-read ads are roughly half of podcast ad spend by Magellan AI's benchmark. The long tail, hundreds of thousands of active shows, is mostly unsold. We start where the pain is sharpest: shows with real audiences and no sales team.
 
 2. **"Who pays?"**
-   Networks and agencies pay a subscription to run every show they manage; brands pay a take rate when they book through the marketplace. Independent hosts are free — they're the supply that makes the marketplace valuable.
+   Networks and agencies pay a subscription to run every show they manage; brands pay a take rate when they book through the marketplace. Independent hosts are free; they're the supply that makes the marketplace valuable.
 
 3. **"What's the moat? Couldn't anyone call Qloo?"**
-   The API is the input, not the product. Our moat is the workflow and the loop: evidence-backed decks, grounded pitches, and — as campaigns run — outcome data on which pitches got replies and which reads converted. That feedback improves ranking in a way a raw API call can't, and the two-sided marketplace compounds it.
+   The API is the input, not the product. Our moat is the workflow and the loop: evidence-backed decks, grounded pitches, and, as campaigns run, outcome data on which pitches got replies and which reads converted. That feedback improves ranking in a way a raw API call can't, and the two-sided marketplace compounds it.
 
 4. **"Why do you need Qloo? Isn't this just ChatGPT?"**
    We show the difference on every run. A plain LLM only knows the show's topic, so it suggests the category defaults. Qloo knows what the audience does across film, TV, music, food & drink, books and places, and which brands' fans share those tastes. Without Qloo we have no candidates, no evidence, no score and nothing we're allowed to cite.
@@ -76,21 +76,21 @@ Fallbacks: if the network is slow, open the cached share link (instant). If the 
    Code. Every proper noun in the email and script is checked against the entities the API returned for that show; if the model invents one, it has to rewrite, and if it keeps doing it we fall back to a template. The card shows how many grounded references it used.
 
 7. **"Why would a brand trust a small show?"**
-   Because the pitch comes with evidence a brand manager can forward: specific shared tastes, not "our audience is engaged." Small shows also tend to have the tightest host–listener trust, which is exactly what host-read ads sell. And the brand can check it themselves: brand-side mode runs the same overlap from their side.
+   Because the pitch comes with evidence a brand manager can forward: specific shared tastes, not "our audience is engaged." Small shows also tend to have the tightest host-listener trust, which is exactly what host-read ads sell. And the brand can check it themselves: brand-side mode runs the same overlap from their side.
 
 8. **"Is this agentic or a pipeline with a chatbot on top?"**
-   The LLM plans the run and chooses tools and brands — you can see its reasons in the trace — while guardrails cap steps, API calls and time, and finish the plan if the model stalls. Deterministic parts (scoring, grounding) are deliberately not left to the model.
+   The LLM plans the run and chooses tools and brands (you can see its reasons in the trace), while guardrails cap steps, API calls and time, and finish the plan if the model stalls. Deterministic parts (scoring, grounding) are deliberately not left to the model.
 
 9. **"What about brand safety?"**
-   Hosts toggle off categories — alcohol, gambling, tobacco, cannabis, crypto, firearms, adult — before ranking, and the deck says how many brands were removed.
+   Hosts toggle off categories (alcohol, gambling, tobacco, cannabis, crypto, firearms, adult) before ranking, and the deck says how many brands were removed.
 
 10. **"What's next?"**
-    Brand-side mode and an MCP server are already built: a brand gets the podcasts whose listeners love it, and any agent — a network's CRM assistant or a brand's media-buying agent — can call HostRead as a tool. Next is campaign memory to learn from outcomes, a network dashboard to find sponsors that fit several shows at once, and introducing a brand and a show when their two match lists point at each other.
+    Brand-side mode and an MCP server are already built: a brand gets the podcasts whose listeners love it, and any agent, such as a network's CRM assistant or a brand's media-buying agent, can call HostRead as a tool. Next is campaign memory to learn from outcomes, a network dashboard to find sponsors that fit several shows at once, and introducing a brand and a show when their two match lists point at each other.
 
 ---
 
 ## Sources for the numbers
 
-- US podcast ad revenue 2025 ≈ $2.86B (+17.6% vs 2024): IAB/PwC Internet Advertising Revenue Report, full-year 2025 (published April 2026) — https://www.iab.com
+- US podcast ad revenue 2025 ≈ $2.86B (+17.6% vs 2024): IAB/PwC Internet Advertising Revenue Report, full-year 2025 (published April 2026): https://www.iab.com
 - Host-read ≈ 46% of podcast ad spend in Q3 2025: Magellan AI quarterly benchmark (as reported secondhand; verify on magellan.ai before quoting)
-- ~480k podcasts published an episode in the last 90 days: Podcast Index — https://podcastindex.org (check the live stats page)
+- ~480k podcasts published an episode in the last 90 days: Podcast Index, https://podcastindex.org (check the live stats page)
