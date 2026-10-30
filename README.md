@@ -139,6 +139,7 @@ npm test          # unit tests: scoring (both modes), brand-side pipeline on fix
 npm run typecheck
 npm run probe     # API verification probe (needs QLOO_API_KEY); prints a summary only
 npm run health    # pre-demo check of a deployment: status, and every landing example cached (warms any that aren't)
+npm run llm-url -- https://<name>.trycloudflare.com   # new LLM endpoint: checks it answers, updates .env.local + Vercel, redeploys
 ```
 
 ### Environment variables
