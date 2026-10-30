@@ -54,14 +54,20 @@ const ARCHIVE_TIMEOUT_MS = 5000;
 // per instance (and per function), so it only holds a deck briefly; otherwise other
 // instances would keep serving the deck as it was before a pitch was added.
 const ARCHIVED_MEMORY_TTL_SEC = 120;
-const memoryTtl = () => (hasDeckArchive() ? ARCHIVED_MEMORY_TTL_SEC : config.cache.runTtlSec);
+// A deck built while the LLM was down has template pitches and no baseline, so it
+// is kept only briefly and the next visit after that gets a full run.
+const DEGRADED_TTL_SEC = 15 * 60;
+const isDegraded = (result: unknown) =>
+  Boolean((result as Partial<RunResult>).stats?.fallbacks?.some((f) => f === "llm-unavailable" || f === "baseline-unavailable"));
+const resultTtl = (result: unknown) => (isDegraded(result) ? DEGRADED_TTL_SEC : config.cache.runTtlSec);
+const memoryTtl = (result: unknown) => Math.min(hasDeckArchive() ? ARCHIVED_MEMORY_TTL_SEC : config.cache.runTtlSec, resultTtl(result));
 
 async function readArchived<T extends { createdAt: string }>(key: string): Promise<T | undefined> {
   const res = await blobGet(deckPath(key), { access: "private", abortSignal: AbortSignal.timeout(ARCHIVE_TIMEOUT_MS) });
   if (!res?.stream) return undefined;
   const deck = JSON.parse(await new Response(res.stream).text()) as T;
   const ageMs = Date.now() - Date.parse(deck.createdAt);
-  return ageMs < config.cache.runTtlSec * 1000 ? deck : undefined;
+  return ageMs < resultTtl(deck) * 1000 ? deck : undefined;
 }
 
 /** A finished result (sponsor deck or brand match) from memory, else the archive. */
@@ -69,7 +75,7 @@ export async function getCachedResult<T extends { createdAt: string }>(key: stri
   const hit = await cacheGet<T>(key);
   if (hit || !hasDeckArchive()) return hit;
   const archived = await readArchived<T>(key).catch(() => undefined);
-  if (archived) await cacheSet(key, archived, memoryTtl());
+  if (archived) await cacheSet(key, archived, memoryTtl(archived));
   return archived;
 }
 
@@ -82,7 +88,7 @@ export function saveRun(key: string, result: RunResult): Promise<void> {
 }
 
 export async function saveResult(key: string, result: { createdAt: string }): Promise<void> {
-  await cacheSet(key, result, memoryTtl());
+  await cacheSet(key, result, memoryTtl(result));
   if (!hasDeckArchive()) return;
   await blobPut(deckPath(key), JSON.stringify(result), {
     access: "private",

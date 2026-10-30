@@ -84,6 +84,7 @@ function RunStatus({ state, traceOpen, onTrace }: { state: RunUiState; traceOpen
   else if (state.cached && state.result)
     text = `Opened from cache, no new API calls. Built ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(state.result.createdAt))} in ${secs} s from ${stats?.apiCalls ?? 0} Qloo calls.`;
   else text = `Built by the agent in ${secs} s: ${state.steps.length} steps, ${stats?.apiCalls ?? 0} Qloo calls, ${stats?.llmCalls ?? 0} LLM calls.`;
+  const offline = !running && stats?.fallbacks.includes("llm-unavailable");
   const phase = state.status === "connecting" ? "" : running ? (state.deck ? "Deck ready. Writing pitches." : "The agent is working.") : "The deck is complete.";
   return (
     <div className="no-print mt-6 flex flex-col gap-3 border border-border-soft bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -93,7 +94,15 @@ function RunStatus({ state, traceOpen, onTrace }: { state: RunUiState; traceOpen
         ) : (
           <CircleCheck className="mt-px size-4 shrink-0 text-success-text sm:mt-0" aria-hidden="true" />
         )}
-        <span className="min-w-0">{text}</span>
+        <span className="min-w-0">
+          {text}
+          {offline && (
+            <span className="text-muted">
+              {" "}
+              The language model was offline for this run, so pitches use templates and the chatbot comparison is missing. Scores and evidence don&apos;t use it.
+            </span>
+          )}
+        </span>
         <span className="sr-only" aria-live="polite">
           {phase}
         </span>
